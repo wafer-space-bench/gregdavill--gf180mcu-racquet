@@ -169,7 +169,7 @@ module chip_top #(
         .NUM_INPUT_PADS  (NUM_INPUT_PADS),
         .NUM_BIDIR_PADS  (NUM_BIDIR_PADS),
         .NUM_ANALOG_PADS (NUM_ANALOG_PADS)
-    ) i_chip_core (
+    ) u_chip_core (
         `ifdef USE_POWER_PINS
         .VDD        (VDD),
         .VSS        (VSS),
