@@ -49,55 +49,110 @@ module chip_core #(
     logic _unused;
     assign _unused = &bidir_in;
 
-    logic [NUM_BIDIR_PADS-1:0] count;
 
-    always_ff @(posedge clk) begin
-        if (!rst_n) begin
-            count <= '0;
-        end else begin
-            if (&input_in) begin
-                count <= count + 1;
-            end
-        end
-    end
+   parameter memsize = 512;
+   localparam aw    = $clog2(memsize);
 
-    logic [7:0] sram_0_out;
+   wire [aw-1:0] sram_waddr;
+   wire [7:0] 	 sram_wdata;
+   wire 	 sram_wen;
+   wire [aw-1:0] sram_raddr;
+   wire [7:0] 	 sram_rdata;
+   wire 	 sram_ren;
 
-    (* keep *)
-    gf180mcu_fd_ip_sram__sram512x8m8wm1 sram_0 (
+   wire q;
+
+   wire spi_cs;
+   wire spi_sck;
+   wire spi_copi;
+   wire spi_cipo;
+
+    
+    assign bidir_out[0] = q;
+    
+    assign bidir_out[1] = spi_cs;
+    assign bidir_out[2] = spi_sck;
+    assign bidir_out[3] = spi_copi;
+
+    
+    // assign spi_cipo = bidir_in[4];
+
+    assign bidir_out[NUM_BIDIR_PADS-1:5] = '0;
+
+
+    logic loader_enabled;
+    logic [7:0] loader_wdata;
+    logic       loader_valid;
+    logic       loader_ready;
+
+    logic [7:0] loader01_wdata;
+    logic       loader01_valid;
+    logic       loader01_ready;
+
+    proc_wrapper u_proc_wrapper0 (
         `ifdef USE_POWER_PINS
-        .VDD  (VDD),
-        .VSS  (VSS),
+        .VDD(VDD),
+        .VSS(VSS),
         `endif
+        
+        .i_clk(clk),     // clock
+        .i_rst(rst_n),     // reset (active low)
 
-        .CLK  (clk),
-        .CEN  (1'b1),
-        .GWEN (1'b0),
-        .WEN  (8'b0),
-        .A    ('0),
-        .D    ('0),
-        .Q    (sram_0_out)
+        .i_loader_en(loader_enabled),
+
+        .i_loader_i_wdata(loader_wdata), // Loader stream interface in data
+        .i_loader_i_valid(loader_valid), // Loader stream interface in valid
+        .o_loader_i_ready(loader_ready), // Loader stream interface in ready
+
+        .o_loader_o_wdata(loader01_wdata), // Loader stream interface out data
+        .o_loader_o_valid(loader01_valid), // Loader stream interface out valid
+        .i_loader_o_ready(loader01_ready), // Loader stream interface out ready
+
+        .q()
     );
 
-    logic [7:0] sram_1_out;
-
-    (* keep *)
-    gf180mcu_fd_ip_sram__sram512x8m8wm1 sram_1 (
+    proc_wrapper u_proc_wrapper1 (
         `ifdef USE_POWER_PINS
-        .VDD  (VDD),
-        .VSS  (VSS),
+        .VDD(VDD),
+        .VSS(VSS),
         `endif
+        
+        .i_clk(clk),     // clock
+        .i_rst(rst_n),     // reset (active low)
 
-        .CLK  (clk),
-        .CEN  (1'b1),
-        .GWEN (1'b0),
-        .WEN  (8'b0),
-        .A    ('0),
-        .D    ('0),
-        .Q    (sram_1_out)
+        .i_loader_en(loader_enabled),
+
+        .i_loader_i_wdata(loader01_wdata), // Loader stream interface in data
+        .i_loader_i_valid(loader01_valid), // Loader stream interface in valid
+        .o_loader_i_ready(loader01_ready), // Loader stream interface in ready
+
+        .o_loader_o_wdata(), // Loader stream interface out data
+        .o_loader_o_valid(), // Loader stream interface out valid
+        .i_loader_o_ready(1'b1), // Loader stream interface out ready
+
+        .q()
     );
 
-    assign bidir_out = count ^ {24'd0, sram_0_out, sram_1_out};
+
+
+    logic rst;
+    assign rst = ~rst_n;
+
+    racquet u_racquet (
+        .clk(clk), 
+        .rst(rst),
+    
+        .cs(spi_cs), 
+        .copi(spi_copi), 
+        .cipo(spi_cipo), 
+        .sck(spi_sck),
+
+        .loader_enabled(loader_enabled),
+
+        .o_loader_payload(loader_wdata),
+        .o_loader_valid(loader_valid),
+        .i_loader_ready(loader_ready)
+    );
 
 endmodule
 

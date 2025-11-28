@@ -130,6 +130,9 @@ module proc_wrapper (
             end
 
             BYPASS: begin
+                o_loader_o_wdata = i_loader_i_wdata;
+                o_loader_o_valid = i_loader_i_valid;
+                o_loader_i_ready = i_loader_o_ready;
 
                 if(i_loader_en == 0) begin
                     next_state = RUN;
@@ -185,18 +188,6 @@ module proc_wrapper (
         .D    (sram_wdata),
         .Q    (sram_rdata)
     );
-
-    logic rst;
-    assign rst = ~i_rst;
-
-    racquet u_racquet (
-        .clk(i_clk), 
-        .rst(rst),
-        .cs(spi_cs), 
-        .copi(spi_copi), 
-        .cipo(spi_cipo), 
-        .sck(spi_sck));
-
 
 endmodule
 

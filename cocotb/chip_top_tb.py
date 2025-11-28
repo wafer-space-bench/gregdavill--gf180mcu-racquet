@@ -17,10 +17,13 @@ pdk = os.getenv("PDK", "gf180mcuD")
 scl = os.getenv("SCL", "gf180mcu_fd_sc_mcu7t5v0")
 gl = os.getenv("GL", False)
 
-hdl_toplevel = "proc_wrapper"
+hdl_toplevel = "chip_top"
 
 async def set_defaults(dut):
-    dut.i_loader_en.value = 1
+    ...
+    dut.bidir_PAD.value = 0
+
+    # dut.i_loader_en.value = 1
 
 async def enable_power(dut):
     dut.VDD.value = 1
@@ -48,8 +51,8 @@ async def start_up(dut):
     await set_defaults(dut)
     if gl:
         await enable_power(dut)
-    await start_clock(dut.i_clk)
-    await reset(dut.i_rst)
+    await start_clock(dut.clk_PAD)
+    await reset(dut.rst_n_PAD)
 
 
 @cocotb.test()
@@ -67,9 +70,9 @@ async def test_counter(dut):
     logger.info("Running the test...")
 
     # Wait for some time...
-    await ClockCycles(dut.i_clk, 2)
+    await ClockCycles(dut.clk_PAD, 2)
 
-    instr = [
+    instr0 = [
         0x37, 0x05, 0x00, 0x40,
         0x13, 0x05, 0x05, 0x00,
         0x13, 0x03, 0x80, 0x00,
@@ -83,35 +86,47 @@ async def test_counter(dut):
         0x00, 0x00, 0x00, 0x00,
     ]
 
-    instr += [0x00] * (512 - len(instr))
+    instr0 += [0x00] * (512 - len(instr0))
 
+    instr1 = [
+        0x37, 0x05, 0x00, 0x40,
+        0x13, 0x05, 0x05, 0x00,
+        0x13, 0x03, 0xF0, 0x00,
+        0x93, 0x02, 0x00, 0x00,
+        0x23, 0x00, 0x55, 0x00,
+        0x93, 0xC2, 0x12, 0x00,
+        0xB3, 0x73, 0x00, 0x00,
+        0x93, 0x83, 0x13, 0x00,
+        0xE3, 0x1E, 0x73, 0xFE,
+        0x6F, 0xF0, 0xDF, 0xFE,
+        0x00, 0x00, 0x00, 0x00,
+    ]
+
+    instr1 += [0x00] * (512 - len(instr1))
 
     rom = [
         0x00, 0x00, 0x00, 0x00,
         0xca, 0xfe, # preamble
         0x10, 0x00, # LOAD
-        
-        *instr,
+        *instr0,
+
+        0x10, 0x00, # LOAD
+        *instr1,
 
         0x11, 0x00,
     ]
 
     # Simulate SPI FLASH READ
-    dut.spi_cipo.value = 0
+    dut.u_chip_core.spi_cipo.value = 0
     for v in rom:
         for _ in range(8):
-            dut.spi_cipo.value = bool(v & 0x80)
+            dut.u_chip_core.spi_cipo.value = bool(v & 0x80)
             v <<= 1
-            await dut.spi_sck.value_change
-            await dut.spi_sck.value_change
-
-    await ClockCycles(dut.i_clk, 5)
-    dut.i_loader_en.value = 0
-
-    
+            await Edge(dut.u_chip_core.spi_sck)
+            await Edge(dut.u_chip_core.spi_sck)
 
     # Wait for a number of clock cycles
-    await ClockCycles(dut.i_clk, 4200)
+    await ClockCycles(dut.clk_PAD, 14200)
 
     # Check the end result of the counter
     # assert dut.bidir_PAD.value == 100 - 1

@@ -1,5 +1,5 @@
 from amaranth import *
-from amaranth.lib import data
+from amaranth.lib import data, stream
 from amaranth.back import verilog
 
 from amaranth.lib.cdc import ResetSynchronizer
@@ -26,6 +26,12 @@ class Racquet(Elaboratable):
 
         self.spi = SPI()
 
+        self.o_loader_payload = Signal(8)
+        self.o_loader_valid = Signal(1)
+        self.i_loader_ready = Signal(1)
+
+        self.loader_enabled = Signal(1, reset=1)
+
     def elaborate(self, platform):
         m = Module()
         m.domains.sync = ClockDomain('sync', async_reset=True)
@@ -44,9 +50,11 @@ class Racquet(Elaboratable):
             m.d.sync += opcode_reg.eq(spi.resp.p.data)
 
 
+        m.d.comb += self.loader_enabled.eq(1)
         with m.FSM():
             with m.State("RESET"):
                 m.next = "ADDR"
+
 
             with m.State("ADDR"):
                 m.d.comb += [
@@ -99,7 +107,7 @@ class Racquet(Elaboratable):
                             ... # NOP
                         with m.Case(Opcode.LOAD):
                             m.next = "LOAD"
-                            m.d.sync += counter.eq(512)
+                            m.d.sync += counter.eq(511)
                         with m.Case(Opcode.DONE):
                             m.next = "DONE"
                         with m.Default():
@@ -119,6 +127,8 @@ class Racquet(Elaboratable):
 
             with m.State("FIN"):
                 m.d.comb += spi.resp.ready.eq(1)
+                m.d.comb += self.loader_enabled.eq(0)
+
 
 
             with m.State("LOAD"):
@@ -129,7 +139,13 @@ class Racquet(Elaboratable):
                     spi.cmd.p.chip.eq(1),
                 ]
 
-                m.d.comb += spi.resp.ready.eq(1)
+                m.d.comb += [
+                    self.o_loader_payload.eq(spi.resp.p.data[0:8]),
+                    self.o_loader_valid.eq(spi.resp.valid),
+                    spi.resp.ready.eq(self.i_loader_ready),
+                ]
+
+                # m.d.comb += spi.resp.ready.eq(1)
                 with m.If(spi.resp.ready & spi.resp.valid):
                     m.d.sync += counter.eq(counter - 1)
                     with m.If(counter == 0):
@@ -144,7 +160,9 @@ if __name__ == "__main__":
         racquet,
         name="racquet",
         ports=[racquet.clk, racquet.rst,
-               racquet.spi.sck,racquet.spi.copi,racquet.spi.cipo,racquet.spi.cs ],
+               racquet.spi.sck,racquet.spi.copi,racquet.spi.cipo,racquet.spi.cs,
+               racquet.o_loader_payload, racquet.o_loader_valid, racquet.i_loader_ready,
+               racquet.loader_enabled],
         strip_internal_attrs=True
     )
 
