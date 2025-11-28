@@ -68,7 +68,7 @@ module chip_core #(
    wire spi_cipo;
 
     
-    assign bidir_out[0] = q;
+    // assign bidir_out[0] = q;
     
     assign bidir_out[1] = spi_cs;
     assign bidir_out[2] = spi_sck;
@@ -79,60 +79,47 @@ module chip_core #(
 
     assign bidir_out[NUM_BIDIR_PADS-1:5] = '0;
 
+    localparam integer NUM_PROC_CORES = 2;
+    genvar i;
 
     logic loader_enabled;
-    logic [7:0] loader_wdata;
-    logic       loader_valid;
-    logic       loader_ready;
+    logic [7:0] loader_wdata[NUM_PROC_CORES + 1];
+    logic       loader_valid[NUM_PROC_CORES + 1];
+    logic       loader_ready[NUM_PROC_CORES + 1];
 
-    logic [7:0] loader01_wdata;
-    logic       loader01_valid;
-    logic       loader01_ready;
+    logic [NUM_PROC_CORES-1:0] proc_core_io;
 
-    proc_wrapper u_proc_wrapper0 (
-        `ifdef USE_POWER_PINS
-        .VDD(VDD),
-        .VSS(VSS),
-        `endif
-        
-        .i_clk(clk),     // clock
-        .i_rst(rst_n),     // reset (active low)
+    generate begin
+        for (i = 0; i < NUM_PROC_CORES ; i++ ) begin : gen_proc_wrapper
+            proc_wrapper u_proc_wrapper (
+                `ifdef USE_POWER_PINS
+                .VDD(VDD),
+                .VSS(VSS),
+                `endif
+                
+                .i_clk(clk),        // clock
+                .i_rst(rst_n),      // reset (active low)
 
-        .i_loader_en(loader_enabled),
+                .i_loader_en(loader_enabled),
 
-        .i_loader_i_wdata(loader_wdata), // Loader stream interface in data
-        .i_loader_i_valid(loader_valid), // Loader stream interface in valid
-        .o_loader_i_ready(loader_ready), // Loader stream interface in ready
+                // Loader stream interface in
+                .i_loader_i_wdata(loader_wdata[i]),
+                .i_loader_i_valid(loader_valid[i]),
+                .o_loader_i_ready(loader_ready[i]),
 
-        .o_loader_o_wdata(loader01_wdata), // Loader stream interface out data
-        .o_loader_o_valid(loader01_valid), // Loader stream interface out valid
-        .i_loader_o_ready(loader01_ready), // Loader stream interface out ready
+                // Loader stream interface out, to next core
+                .o_loader_o_wdata(loader_wdata[i+1]),
+                .o_loader_o_valid(loader_valid[i+1]),
+                .i_loader_o_ready(loader_ready[i+1]),
 
-        .q()
-    );
+                .q(proc_core_io[i])
+            );
+        end
+    end
+    endgenerate
 
-    proc_wrapper u_proc_wrapper1 (
-        `ifdef USE_POWER_PINS
-        .VDD(VDD),
-        .VSS(VSS),
-        `endif
-        
-        .i_clk(clk),     // clock
-        .i_rst(rst_n),     // reset (active low)
-
-        .i_loader_en(loader_enabled),
-
-        .i_loader_i_wdata(loader01_wdata), // Loader stream interface in data
-        .i_loader_i_valid(loader01_valid), // Loader stream interface in valid
-        .o_loader_i_ready(loader01_ready), // Loader stream interface in ready
-
-        .o_loader_o_wdata(), // Loader stream interface out data
-        .o_loader_o_valid(), // Loader stream interface out valid
-        .i_loader_o_ready(1'b1), // Loader stream interface out ready
-
-        .q()
-    );
-
+    // Last core ready signal tied high
+    assign loader_ready[NUM_PROC_CORES] = 1'b1;
 
 
     logic rst;
@@ -149,9 +136,9 @@ module chip_core #(
 
         .loader_enabled(loader_enabled),
 
-        .o_loader_payload(loader_wdata),
-        .o_loader_valid(loader_valid),
-        .i_loader_ready(loader_ready)
+        .o_loader_payload(loader_wdata[0]),
+        .o_loader_valid(loader_valid[0]),
+        .i_loader_ready(loader_ready[0])
     );
 
 endmodule
