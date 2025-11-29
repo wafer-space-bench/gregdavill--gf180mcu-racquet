@@ -123,12 +123,12 @@ async def test_counter(dut):
     await ClockCycles(dut.clk_PAD, 2)
 
     asm0 = """
-#define GPIO_BASE 0x40000000
+#define GPIO_BASE 0x40001000
 
 .globl _start
 _start: li	a0, GPIO_BASE
         li	t1, 3
-        addi	t0, zero, 0
+        addi	t0, zero, 10
 
 bl1:    sb	t0, 0(a0)
         xori	t0, t0, 1
@@ -138,16 +138,30 @@ time1:	addi	t2, t2, 1
         bne	t1, t2, time1
         j	bl1
 """
+
+    asm1 = """
+#define GPIO_BASE 0x80002000
+
+.globl _start
+_start: li	a0, GPIO_BASE
+        
+bl1:    lb	t0, 0(a0)
+        j	bl1
+"""
     bin0 = gcc_compile(asm0)
+    bin1 = gcc_compile(asm1)
 
     for idx, b in enumerate(bin0):
         dut.u_chip_core.gen_proc_wrapper[0].u_proc_wrapper.u_sram.mem[idx].value = LogicArray(b, 8)
-    for idx, b in enumerate(bin0):
+    for idx, b in enumerate(bin1):
         dut.u_chip_core.gen_proc_wrapper[1].u_proc_wrapper.u_sram.mem[idx].value = LogicArray(b, 8)
+    for idx, b in enumerate(bin1):
+        dut.u_chip_core.gen_proc_wrapper[2].u_proc_wrapper.u_sram.mem[idx].value = LogicArray(b, 8)
 
     # Cores are held in reset unless their SRAM is loaded. Fake loading to speed up sims
     dut.u_chip_core.gen_proc_wrapper[0].u_proc_wrapper.state.value = Force(1)
     dut.u_chip_core.gen_proc_wrapper[1].u_proc_wrapper.state.value = Force(1)
+    dut.u_chip_core.gen_proc_wrapper[2].u_proc_wrapper.state.value = Force(1)
 
     rom = [
         0x00, 0x00, 0x00, 0x00,
@@ -222,6 +236,7 @@ def chip_top_runner():
         sources.append(proj_path / "../ip/serv/rtl/serv_mem_if.v")
         sources.append(proj_path / "../src/racquet.sv")
         sources.append(proj_path / "../src/spi.sv")
+        sources.append(proj_path / "../src/wb_queue.sv")
 
 
     sources += [
