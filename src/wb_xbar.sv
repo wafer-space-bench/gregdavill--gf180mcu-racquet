@@ -177,7 +177,7 @@ module wb_xbar #(
                     s_sel_o[j] = m_sel_i[m];
 
                     // address passed as offset within 4KB window: lower 12 bits of master's address
-                    s_adr_o[j] = m_adr_i[m][OFFSET_BITS-1:0];
+                    s_adr_o[j] = OFFSET_BITS'(m_adr_i[m]);
 
                     // write data
                     s_dat_o[j] = m_dat_i[m];
