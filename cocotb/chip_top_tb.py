@@ -7,8 +7,10 @@ import logging
 from pathlib import Path
 
 import cocotb
+from cocotb.types import LogicArray
+from cocotb.handle import *
 from cocotb.clock import Clock
-from cocotb.triggers import Timer, Edge, RisingEdge, FallingEdge, ClockCycles
+from cocotb.triggers import Timer, Edge, RisingEdge, FallingEdge, ClockCycles, First, ValueChange
 from cocotb_tools.runner import get_runner
 
 sim = os.getenv("SIM", "icarus")
@@ -19,11 +21,32 @@ gl = os.getenv("GL", False)
 
 hdl_toplevel = "chip_top"
 
-async def set_defaults(dut):
-    ...
-    dut.bidir_PAD.value = 0
+def get_packed_field(handle, start, stop=None):
+    full_value = handle.value
+    if stop is None:
+        return full_value[start]
+    else:
+        return full_value[start:stop]
+    
+def set_packed_field(handle, start, stop=None, *, value):
+    full_value = LogicArray('z' * 40, 40)
+    if stop is None:
+        full_value[start] = value
+    else:
+        full_value[start:stop] = value
+    handle.value = full_value
 
-    # dut.i_loader_en.value = 1
+async def value_change_packed_field(handle, start, stop=None):
+    value_changed = False
+    while not value_changed:
+        old_value = get_packed_field(handle, start, stop)
+        await ValueChange(handle)
+        new_value = get_packed_field(handle, start, stop)
+        value_changed = new_value != old_value
+
+
+async def set_defaults(dut):
+    set_packed_field(dut.bidir_PAD, 4, value = 0b1)
 
 async def enable_power(dut):
     dut.VDD.value = 1
