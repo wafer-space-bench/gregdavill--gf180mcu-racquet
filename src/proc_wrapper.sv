@@ -103,7 +103,7 @@ module proc_wrapper (
             o_loader_o_wdata <= '0;
             o_loader_o_valid <= '0;
         end else begin
-            if (next_state == BYPASS) begin
+            if (state == BYPASS) begin
                 o_loader_o_wdata <= i_loader_i_wdata;
                 o_loader_o_valid <= i_loader_i_valid;
             end
