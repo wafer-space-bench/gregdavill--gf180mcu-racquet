@@ -3,23 +3,25 @@
 
 `default_nettype none
 
+`include "slot_defines.svh"
+
 module chip_top #(
     // Power/ground pads for core and I/O
-    parameter NUM_DVDD_PADS = 8,
-    parameter NUM_DVSS_PADS = 10,
+    parameter NUM_DVDD_PADS = `NUM_DVDD_PADS,
+    parameter NUM_DVSS_PADS = `NUM_DVSS_PADS,
 
     // Signal pads
-    parameter NUM_INPUT_PADS = 12,
-    parameter NUM_BIDIR_PADS = 40,
-    parameter NUM_ANALOG_PADS = 2
+    parameter NUM_INPUT_PADS = `NUM_INPUT_PADS,
+    parameter NUM_BIDIR_PADS = `NUM_BIDIR_PADS,
+    parameter NUM_ANALOG_PADS = `NUM_ANALOG_PADS
     )(
     `ifdef USE_POWER_PINS
-    inout wire VDD,
-    inout wire VSS,
+    inout  wire VDD,
+    inout  wire VSS,
     `endif
 
-    inout  wire       clk_PAD,
-    inout  wire       rst_n_PAD,
+    inout  wire clk_PAD,
+    inout  wire rst_n_PAD,
     
     inout  wire [NUM_INPUT_PADS-1:0] input_PAD,
     inout  wire [NUM_BIDIR_PADS-1:0] bidir_PAD,
@@ -58,7 +60,7 @@ module chip_top #(
     
     for (genvar i=0; i<NUM_DVSS_PADS; i++) begin : dvss_pads
         (* keep *)
-        gf180mcu_fd_io__dvss pad (
+        gf180mcu_ws_io__dvss pad (
             `ifdef USE_POWER_PINS
             .DVDD   (VDD),
             .DVSS   (VSS),

@@ -28,10 +28,31 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' || !(startsWith(github.ref_name, 'version-') || github.ref_name == 'main' || github.ref_name == 'dev') }}
 
 jobs:
+  pre:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Define the Matrix
+        id: export-slots
+        if: 
+        run: |
+          if ${{ github.repository == 'wafer-space/gf180mcu-project-template' }}; then
+            echo "slots=['1x1', '0p5x1', '1x0p5', '0p5x0p5']" >> $GITHUB_OUTPUT
+          else
+            echo "slots=['default']" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      matrix: ${{ steps.export-slots.outputs.slots }}
   chip:
     runs-on: ubuntu-24.04
     name: Build the Chip
+    needs:
+      - pre
+    strategy:
+      matrix:
+        slot: ${{fromJSON(needs.pre.outputs.matrix)}}
     steps:
+      - name: Set slot
+        run: echo "SLOT=${{ matrix.slot }}" >> $GITHUB_ENV
       - name: Maximize build space
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
@@ -59,21 +80,27 @@ jobs:
         run: |
           make clone-pdk
       - name: Run RTL simulation
-        uses: workflow/nix-shell-action@v3.4.0
-        with:
-          flakes-from-devshell: true
-          script: |
-            make sim
+        run: |
+          nix develop --command make sim
       - name: Implement the Chip
-        uses: workflow/nix-shell-action@v3.4.0
+        run: |
+          nix develop --command make librelane-nodrc
+          make copy-final
+          nix develop --command make render-image
+      - name: Create summary
+        run: |
+          echo "# Manufacturability" >> $GITHUB_STEP_SUMMARY
+          cat librelane/runs/*/*-misc-reportmanufacturability/manufacturability.rpt >> $GITHUB_STEP_SUMMARY
+      - name: Upload GDS
+        uses: actions/upload-artifact@v4
         with:
-          flakes-from-devshell: true
-          script: |
-            make librelane-nodrc
-            make copy-final
+          name: ${{ matrix.slot }}_gds
+          path: final/gds/*
+      - name: Upload image
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.slot }}_image
+          path: img/*.png
       - name: Run GL simulation
-        uses: workflow/nix-shell-action@v3.4.0
-        with:
-          flakes-from-devshell: true
-          script: |
-            make sim-gl
+        run: |
+          nix develop --command make sim-gl
