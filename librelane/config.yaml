@@ -184,8 +184,11 @@ IGNORE_DISCONNECTED_MODULES:
 # Clock
 CLOCK_PORT: clk_PAD
 CLOCK_NET: clk_pad/Y
+CLOCK_PERIOD: 60 # 16 MHz
 
-CLOCK_PERIOD: 40 # 25 MHz
+# Force use of chonky bois to reduce clock skew (default list is 2, 4, 8)
+CTS_CLK_BUFFERS:
+  - "gf180mcu_fd_sc_mcu7t5v0__clkbuf_16"
 
 # Floorplanning
 FP_SIZING: absolute
