@@ -28,7 +28,32 @@ DESIGN_NAME: chip_top
 VERILOG_FILES:
 - dir::../src/chip_top.sv
 - dir::../src/chip_core.sv
-
+- dir::../src/wb_xbar.sv
+- dir::../src/proc_wrapper.sv
+- dir::../src/racquet.sv
+- dir::../src/spi.sv
+- dir::../ip/subservient/rtl/subservient.v
+- dir::../ip/subservient/rtl/subservient_gpio.v
+- dir::../ip/subservient/rtl/subservient_core.v
+- dir::../ip/subservient/rtl/subservient_rf_ram_if.v
+- dir::../ip/serv/servile/servile.v
+- dir::../ip/serv/servile/servile_mux.v
+- dir::../ip/serv/servile/servile_arbiter.v
+- dir::../ip/serv/servile/servile_rf_mem_if.v
+- dir::../ip/serv/rtl/serv_rf_ram_if.v
+- dir::../ip/serv/rtl/serv_top.v
+- dir::../ip/serv/rtl/serv_state.v
+- dir::../ip/serv/rtl/serv_aligner.v
+- dir::../ip/serv/rtl/serv_compdec.v
+- dir::../ip/serv/rtl/serv_decode.v
+- dir::../ip/serv/rtl/serv_immdec.v
+- dir::../ip/serv/rtl/serv_bufreg.v
+- dir::../ip/serv/rtl/serv_bufreg2.v
+- dir::../ip/serv/rtl/serv_ctrl.v
+- dir::../ip/serv/rtl/serv_alu.v
+- dir::../ip/serv/rtl/serv_rf_if.v
+- dir::../ip/serv/rtl/serv_mem_if.v
+        
 # Enable plugin for better SystemVerilog support
 # USE_SLANG: True
 
