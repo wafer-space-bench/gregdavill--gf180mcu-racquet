@@ -139,20 +139,21 @@ async def test_counter(dut):
         0x11, 0x00,
     ]
 
+    
     # Simulate SPI FLASH READ
-    dut.u_chip_core.spi_cipo.value = 0
-    for v in rom:
+    set_packed_field(dut.bidir_PAD, 4, value = 0b1)
+    for b in rom:
         for _ in range(8):
-            dut.u_chip_core.spi_cipo.value = bool(v & 0x80)
-            v <<= 1
-            await Edge(dut.u_chip_core.spi_sck)
-            await Edge(dut.u_chip_core.spi_sck)
+            set_packed_field(dut.bidir_PAD, 4, value = bool(b & 0x80))
+
+            b <<= 1
+
+            await value_change_packed_field(dut.bidir_PAD, 2)
+            await value_change_packed_field(dut.bidir_PAD, 2)
+
 
     # Wait for a number of clock cycles
-    await ClockCycles(dut.clk_PAD, 14200)
-
-    # Check the end result of the counter
-    # assert dut.bidir_PAD.value == 100 - 1
+    await ClockCycles(dut.clk_PAD, 8000)
 
     logger.info("Done!")
 
