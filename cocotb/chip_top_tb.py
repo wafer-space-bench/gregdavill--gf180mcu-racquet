@@ -179,9 +179,7 @@ def chip_top_runner():
         sources.append(proj_path / "../src/chip_top.sv")
         sources.append(proj_path / "../src/chip_core.sv")
         sources.append(proj_path / "../src/proc_wrapper.sv")
-        sources.append(proj_path / "../src/subservient.v")
-        sources.append(proj_path / "../src/wb_spi_flash.sv")
-        sources.append(proj_path / "../src/spi_flash_stream.sv")
+        sources.append(proj_path / "../src/wb_xbar.sv")
         sources.append(proj_path / "../ip/subservient/rtl/subservient_gpio.v")
         sources.append(proj_path / "../ip/subservient/rtl/subservient_core.v")
         sources.append(proj_path / "../ip/subservient/rtl/subservient_rf_ram_if.v")
@@ -192,6 +190,8 @@ def chip_top_runner():
         sources.append(proj_path / "../ip/serv/rtl/serv_rf_ram_if.v")
         sources.append(proj_path / "../ip/serv/rtl/serv_top.v")
         sources.append(proj_path / "../ip/serv/rtl/serv_state.v")
+        sources.append(proj_path / "../ip/serv/rtl/serv_aligner.v")
+        sources.append(proj_path / "../ip/serv/rtl/serv_compdec.v")
         sources.append(proj_path / "../ip/serv/rtl/serv_decode.v")
         sources.append(proj_path / "../ip/serv/rtl/serv_immdec.v")
         sources.append(proj_path / "../ip/serv/rtl/serv_bufreg.v")
@@ -200,7 +200,8 @@ def chip_top_runner():
         sources.append(proj_path / "../ip/serv/rtl/serv_alu.v")
         sources.append(proj_path / "../ip/serv/rtl/serv_rf_if.v")
         sources.append(proj_path / "../ip/serv/rtl/serv_mem_if.v")
-        sources.append(proj_path / "../ip/racquet/racquet.v")
+        sources.append(proj_path / "../src/racquet.sv")
+        sources.append(proj_path / "../src/spi.sv")
 
 
     sources += [
@@ -214,6 +215,9 @@ def chip_top_runner():
         # Custom IP
         proj_path / "../ip/gf180mcu_ws_ip__id/vh/gf180mcu_ws_ip__id.v",
         proj_path / "../ip/gf180mcu_ws_ip__logo/vh/gf180mcu_ws_ip__logo.v",
+
+        # Logo
+        proj_path / "../ip/gf180mcu_gsd__logo/vh/gf180mcu_gsd__logo.v",
     ]
 
     build_args = []
