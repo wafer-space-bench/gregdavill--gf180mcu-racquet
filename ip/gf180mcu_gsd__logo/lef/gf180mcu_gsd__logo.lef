@@ -1,0 +1,16 @@
+VERSION 5.7 ;
+  NOWIREEXTENSIONATPIN ON ;
+  DIVIDERCHAR "/" ;
+  BUSBITCHARS "[]" ;
+MACRO gf180mcu_gsd__logo
+  CLASS BLOCK ;
+  FOREIGN gf180mcu_gsd__logo ;
+  ORIGIN 0.000 0.000 ;
+  SIZE 170.25 BY 61.5 ;
+  OBS
+      LAYER Metal5 ;
+        RECT 0.0 0.0 170.25 61.5 ;
+  END
+END gf180mcu_gsd__logo
+END LIBRARY
+

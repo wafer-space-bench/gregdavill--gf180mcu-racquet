@@ -202,6 +202,10 @@ module chip_top #(
     (* keep *)
     gf180mcu_ws_ip__logo wafer_space_logo ();
 
+    // GsD logo 
+    (* keep *)
+    gf180mcu_gsd__logo gsd_logo ();
+
 endmodule
 
 `default_nettype wire
