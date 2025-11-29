@@ -329,18 +329,47 @@ MACROS:
         - pdk_dir::libs.ref/gf180mcu_fd_ip_sram/lib/gf180mcu_fd_ip_sram__sram512x8m8wm1__ss_125C_4v50.lib
     instances:
       # Make sure to specify the SRAMs in pdn_cfg.tcl
-      i_chip_core.sram_0:
-        location: [500, 501]
-        orientation: N
-      i_chip_core.sram_1:
-        location: [1000, 501]
+      u_chip_core.gen_proc_wrapper[0].u_proc_wrapper.u_sram:
+        location: [500, 500]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[1].u_proc_wrapper.u_sram:
+        location: [500, 1000]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[2].u_proc_wrapper.u_sram:
+        location: [500, 1500]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[3].u_proc_wrapper.u_sram:
+        location: [500, 2000]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[4].u_proc_wrapper.u_sram:
+        location: [500, 2500]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[5].u_proc_wrapper.u_sram:
+        location: [500, 3000]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[6].u_proc_wrapper.u_sram:
+        location: [500, 3500]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[7].u_proc_wrapper.u_sram:
+        location: [500, 4000]
+        orientation: W
+      
+      u_chip_core.gen_proc_wrapper[8].u_proc_wrapper.u_sram:
+        location: [1250, 500]
+        orientation: E
+
+      u_chip_core.gen_proc_wrapper[9].u_proc_wrapper.u_sram:
+        location: [2181, 500]
+        orientation: W
+
+      u_chip_core.gen_proc_wrapper[10].u_proc_wrapper.u_sram:
+        location: [2931, 500]
         orientation: E
 
 # This is an alternative method compared to
 # specifying the power connections in the RTL
 PDN_MACRO_CONNECTIONS:
-- "i_chip_core.sram_0 VDD VSS VDD VSS"
-- "i_chip_core.sram_1 VDD VSS VDD VSS"
+ - ".*u_sram VDD VSS VDD VSS"
 
 PDN_CFG: dir::pdn_cfg.tcl
 
