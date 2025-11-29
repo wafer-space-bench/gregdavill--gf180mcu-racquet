@@ -101,11 +101,9 @@ module wb_xbar #(
     // - pick a granted master with round-robin fairness
     // - forward the granted master's bus to the slave
     integer j, k, m, s;
-    reg [GRANT_PTR_BITS-1:0] rr_ptr       [NUM_SLAVES]; // round-robin pointer per slave
     reg [NUM_MASTERS-1:0] req_vector[NUM_SLAVES];
     reg [NUM_MASTERS-1:0] req_vector_share[NUM_SLAVES];
     reg [NUM_MASTERS-1:0] grant_vector[NUM_SLAVES];
-    reg [GRANT_PTR_BITS-1:0] grant_index[NUM_SLAVES];
     reg grant_valid[NUM_SLAVES];
 
     // Build req vectors (combinational)
@@ -129,12 +127,10 @@ module wb_xbar #(
         for (j = 0; j < NUM_SLAVES; j = j + 1) begin
             grant_vector[j] = {NUM_MASTERS{1'b0}};
             grant_valid[j]  = 1'b0;
-            grant_index[j]  = {GRANT_PTR_BITS{1'b0}};
             if (NUM_MASTERS == 1) begin
                 if (req_vector[j][0]) begin
                     grant_vector[j][0] = 1'b1;
                     grant_valid[j] = 1'b1;
-                    grant_index[j] = 0;
                 end
             end else begin
                 // fixed priority: pick lowest numbered master that is requesting
@@ -142,12 +138,10 @@ module wb_xbar #(
                     if (req_vector[j][m_idx] && !grant_valid[j]) begin
                         grant_vector[j][m_idx] = 1'b1;
                         grant_valid[j] = 1'b1;
-                        grant_index[j] = m_idx;
                     end
                     if (req_vector_share[j][m_idx]) begin
                         grant_vector[j][m_idx] = 1'b1;
                         grant_valid[j] = 1'b1;
-                        grant_index[j] = m_idx;
                     end
                 end
             end
