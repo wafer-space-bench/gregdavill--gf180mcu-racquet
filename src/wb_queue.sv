@@ -27,10 +27,12 @@ module wb_queue (
 
     localparam integer NUM_QUEUES = 8;
     localparam integer NUM_NBLK_QUEUES = 8;
+    localparam integer NUM_FLAGS = 8;
 
     // Register address map
     localparam logic [9:0] QUEUE0 = 10'h0;
     localparam logic [9:0] NBLK_QUEUE0 = 10'(NUM_QUEUES);
+    localparam logic [9:0] FLAG0 = 10'(NUM_QUEUES + NUM_NBLK_QUEUES);
 
     // Internal registers
     logic [31:0] reg_queue[NUM_QUEUES];
@@ -38,6 +40,8 @@ module wb_queue (
 
     logic [31:0] reg_nblk_queue[NUM_NBLK_QUEUES];
     logic reg_nblk_queue_valid[NUM_NBLK_QUEUES];
+
+    logic [NUM_FLAGS-1:0] flags;
 
     // Address matching
     wire wr_active = wr_cyc_i && wr_stb_i & !wr_ack_o;
@@ -49,7 +53,6 @@ module wb_queue (
             wr_ack_o <= 1'b0;
         end else begin
             if (wr_active) begin
-                // Write operation (performed on response cycle)
                 if (wr_we_i) begin
                     for (int i = 0; i < NUM_QUEUES; i = i + 1)
                     if (wr_adr_i[11:2] == 10'(QUEUE0 + i))
@@ -58,6 +61,9 @@ module wb_queue (
                     for (int i = 0; i < NUM_NBLK_QUEUES; i = i + 1)
                     if (wr_adr_i[11:2] == 10'(NBLK_QUEUE0 + i))
                         wr_ack_o <= 1'b1;
+
+                    for (int i = 0; i < NUM_FLAGS; i = i + 1)
+                    if (wr_adr_i[11:2] == 10'(FLAG0 + i)) wr_ack_o <= 1'b1;
 
                 end else begin
                     // Write only port
@@ -118,6 +124,13 @@ module wb_queue (
         end
     endgenerate
 
+    generate
+        for (j = 0; j < NUM_FLAGS; j = j + 1) begin
+            // Set flag from write port
+            assign flags[j] = (wr_active && wr_we_i) && (wr_adr_i[11:2] == 10'(FLAG0 + j));
+        end
+    endgenerate
+
     // Read port
     always_ff @(posedge clk_i or negedge rst_n) begin
         if (!rst_n) begin
@@ -138,6 +151,12 @@ module wb_queue (
                         if (rd_adr_i[11:2] == 10'(NBLK_QUEUE0 + i)) begin
                             rd_dat_o <= reg_nblk_queue[i];
                             rd_ack_o <= reg_nblk_queue_valid[i];
+                        end
+                    end
+                    for (int i = 0; i < NUM_FLAGS; i = i + 1) begin
+                        if (rd_adr_i[11:2] == 10'(FLAG0 + i)) begin
+                            rd_dat_o <= wr_dat_i[i];
+                            rd_ack_o <= flags[i];
                         end
                     end
                 end
