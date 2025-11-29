@@ -220,7 +220,7 @@ def chip_top_runner():
 
     if sim == "icarus":
         # For debugging
-        build_args = ["-Wall", "-g2012"]
+        build_args = ["-Winfloop", "-Wall", "-g2012"]
         pass
 
     if sim == "verilator":
