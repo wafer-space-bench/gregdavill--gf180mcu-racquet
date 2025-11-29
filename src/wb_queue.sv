@@ -43,8 +43,6 @@ module wb_queue (
     wire wr_active = wr_cyc_i && wr_stb_i & !wr_ack_o;
     wire rd_active = rd_cyc_i && rd_stb_i & !rd_ack_o;
 
-    integer i;
-
     // Write port
     always_ff @(posedge clk_i or negedge rst_n) begin
         if (!rst_n) begin
@@ -53,11 +51,11 @@ module wb_queue (
             if (wr_active) begin
                 // Write operation (performed on response cycle)
                 if (wr_we_i) begin
-                    for (i = 0; i < NUM_QUEUES; i = i + 1)
+                    for (int i = 0; i < NUM_QUEUES; i = i + 1)
                     if (wr_adr_i[11:2] == 10'(QUEUE0 + i))
                         wr_ack_o <= !reg_queue_valid[i];
 
-                    for (i = 0; i < NUM_NBLK_QUEUES; i = i + 1)
+                    for (int i = 0; i < NUM_NBLK_QUEUES; i = i + 1)
                     if (wr_adr_i[11:2] == 10'(NBLK_QUEUE0 + i))
                         wr_ack_o <= 1'b1;
 
@@ -71,51 +69,54 @@ module wb_queue (
     end
     assign wr_dat_o = '0;
 
-    for (i = 0; i < NUM_QUEUES; i = i + 1) begin
-        always_ff @(posedge clk_i or negedge rst_n) begin
-            if (!rst_n) begin
-                reg_queue[i] <= '0;
-                reg_queue_valid[i] <= 1'b0;
-            end else begin
-                if (wr_active && wr_we_i) begin
-                    if (wr_adr_i[11:2] == 10'(QUEUE0 + i)) begin
-                        if (!reg_queue_valid[i]) begin
-                            for (int b = 0; b < 4; b++) begin
-                                if (wr_sel_i[b])
-                                    reg_queue[i][b*8+:8] <= wr_dat_i[b*8+:8];
+    genvar j;
+    generate
+        for (j = 0; j < NUM_QUEUES; j = j + 1) begin
+            always_ff @(posedge clk_i or negedge rst_n) begin
+                if (!rst_n) begin
+                    reg_queue[j] <= '0;
+                    reg_queue_valid[j] <= 1'b0;
+                end else begin
+                    if (wr_active && wr_we_i) begin
+                        if (wr_adr_i[11:2] == 10'(QUEUE0 + j)) begin
+                            if (!reg_queue_valid[j]) begin
+                                for (int b = 0; b < 4; b++) begin
+                                    if (wr_sel_i[b])
+                                        reg_queue[j][b*8+:8] <= wr_dat_i[b*8+:8];
+                                end
+                                reg_queue_valid[j] <= 1'b1;
                             end
-                            reg_queue_valid[i] <= 1'b1;
                         end
+                    end else if (rd_ack_o && (rd_adr_i[11:2] == 10'(QUEUE0 + j))) begin
+                        reg_queue_valid[j] <= 1'b0;
                     end
-                end else if (rd_ack_o && (rd_adr_i[11:2] == 10'(QUEUE0 + i))) begin
-                    reg_queue_valid[i] <= 1'b0;
                 end
             end
         end
-    end
+    endgenerate
 
-    for (i = 0; i < NUM_NBLK_QUEUES; i = i + 1) begin
-        always_ff @(posedge clk_i or negedge rst_n) begin
-            if (!rst_n) begin
-                reg_queue[i] <= '0;
-                reg_queue_valid[i] <= 1'b0;
-            end else begin
-                if (wr_active && wr_we_i) begin
-                    if (wr_adr_i[11:2] == 10'(NBLK_QUEUE0 + i)) begin
-                        if (!reg_queue_valid[i]) begin
+    generate
+        for (j = 0; j < NUM_NBLK_QUEUES; j = j + 1) begin
+            always_ff @(posedge clk_i or negedge rst_n) begin
+                if (!rst_n) begin
+                    reg_nblk_queue[j] <= '0;
+                    reg_nblk_queue_valid[j] <= 1'b0;
+                end else begin
+                    if (wr_active && wr_we_i) begin
+                        if (wr_adr_i[11:2] == 10'(NBLK_QUEUE0 + j)) begin
                             for (int b = 0; b < 4; b++) begin
                                 if (wr_sel_i[b])
-                                    reg_queue[i][b*8+:8] <= wr_dat_i[b*8+:8];
+                                    reg_nblk_queue[j][b*8+:8] <= wr_dat_i[b*8+:8];
                             end
-                            reg_queue_valid[i] <= 1'b1;
+                            reg_nblk_queue_valid[j] <= 1'b1;
                         end
+                    end else if (rd_ack_o && (rd_adr_i[11:2] == 10'(NBLK_QUEUE0 + j))) begin
+                        reg_nblk_queue_valid[j] <= 1'b0;
                     end
-                end else if (rd_ack_o && (rd_adr_i[11:2] == 10'(NBLK_QUEUE0 + i))) begin
-                    reg_queue_valid[i] <= 1'b0;
                 end
             end
         end
-    end
+    endgenerate
 
     // Read port
     always_ff @(posedge clk_i or negedge rst_n) begin
@@ -127,16 +128,16 @@ module wb_queue (
                 if (rd_we_i) begin
                     // RO interface
                 end else begin
-                    for (i = 0; i < NUM_QUEUES; i = i + 1) begin
-                        if (reg_queue_valid[i] && (rd_adr_i[11:2] == 10'(QUEUE0 + i))) begin
+                    for (int i = 0; i < NUM_QUEUES; i = i + 1) begin
+                        if (rd_adr_i[11:2] == 10'(QUEUE0 + i)) begin
                             rd_dat_o <= reg_queue[i];
-                            rd_ack_o <= 1'b1;
+                            rd_ack_o <= reg_queue_valid[i];
                         end
                     end
-                    for (i = 0; i < NUM_NBLK_QUEUES; i = i + 1) begin
-                        if (reg_nblk_queue_valid[i] && (rd_adr_i[11:2] == 10'(NBLK_QUEUE0 + i))) begin
+                    for (int i = 0; i < NUM_NBLK_QUEUES; i = i + 1) begin
+                        if (rd_adr_i[11:2] == 10'(NBLK_QUEUE0 + i)) begin
                             rd_dat_o <= reg_nblk_queue[i];
-                            rd_ack_o <= 1'b1;
+                            rd_ack_o <= reg_nblk_queue_valid[i];
                         end
                     end
                 end
