@@ -1,28 +1,3 @@
-// File: wishbone_crossbar.v
-// A parameterised Wishbone crossbar (classic single-clock, single-cycle ack model).
-// - NUM_MASTERS masters, NUM_SLAVES slaves
-// - Each slave occupies a fixed 4KB (4096 bytes) window of the address map.
-// - Masters drive full ADDR_WIDTH addresses; slaves receive the 12-bit offset within their 4KB window.
-// - Concurrent accesses to different slaves are supported. Concurrent accesses to the same slave are
-//   resolved with a per-slave round-robin arbiter.
-// - Packed bus ports are used so this can be instantiated as a single module file.
-//
-// Notes:
-// - This is plain Verilog-2001 style with generate loops and parameterized widths.
-// - If you need full Wishbone features (pipelined accesses, burst, etc.) extend the state/handshake logic.
-// - SEL_WIDTH defaults to DATA_WIDTH/8 (byte selects).
-//
-// Usage example:
-//   wishbone_crossbar #(.NUM_MASTERS(2), .NUM_SLAVES(8)) xbar ( ... );
-//
-// Supported signals (per-master):
-//   m_cyc_i, m_stb_i, m_we_i, m_sel_i, m_adr_i, m_dat_i  (write)
-//   m_dat_o (read), m_ack_o, m_err_o
-//
-// Supported signals (per-slave):
-//   s_cyc_o, s_stb_o, s_we_o, s_sel_o, s_adr_o (12-bit offset), s_dat_o (write)
-//   s_dat_i (read), s_ack_i, s_err_i
-//
 
 module wb_xbar #(
     parameter integer NUM_MASTERS = 2,
@@ -99,9 +74,9 @@ module wb_xbar #(
             // compute slave index (high bits above offset)
             if (ADDR_WIDTH > OFFSET_BITS) begin : SLICE_IDX
                 // slice of m_adr_arr[i] from ADDR_WIDTH-1 downto OFFSET_BITS
-                always_comb m_slave_idx[i] = {2'b00, m_adr_i[i][ADDR_WIDTH-3:OFFSET_BITS]};
+                assign m_slave_idx[i] = {2'b00, m_adr_i[i][ADDR_WIDTH-3:OFFSET_BITS]};
             end else begin : ZERO_IDX
-                always_comb m_slave_idx[i] = {SLAVE_INDEX_BITS{1'b0}};
+                assign m_slave_idx[i] = {SLAVE_INDEX_BITS{1'b0}};
             end
         end
     endgenerate
@@ -136,10 +111,8 @@ module wb_xbar #(
         end
     end
 
-    integer offset;
-    integer cand;
-    reg found;
-    // Arbiter: simple round-robin per slave (combinational grant selection)
+    // Simple fixed-priority arbiter: lower-numbered master has higher priority.
+    integer m_idx;
     always_comb begin
         for (j = 0; j < NUM_SLAVES; j = j + 1) begin
             grant_vector[j] = {NUM_MASTERS{1'b0}};
@@ -152,38 +125,17 @@ module wb_xbar #(
                     grant_index[j] = 0;
                 end
             end else begin
-                // search from rr_ptr[j] + 1 .. wrap .. rr_ptr[j]
-                found = 1'b0;
-                for (offset = 1; offset <= NUM_MASTERS; offset = offset + 1) begin
-                    cand = (32'(rr_ptr[j]) + offset) % NUM_MASTERS;
-                    if (req_vector[j][cand] && !found) begin
-                        grant_vector[j][cand] = 1'b1;
+                // fixed priority: pick lowest numbered master that is requesting
+                for (m_idx = 0; m_idx < NUM_MASTERS; m_idx = m_idx + 1) begin
+                    if (req_vector[j][m_idx] && !grant_valid[j]) begin
+                        grant_vector[j][m_idx] = 1'b1;
                         grant_valid[j] = 1'b1;
-                        grant_index[j] = cand[GRANT_PTR_BITS-1:0];
-                        found = 1'b1;
+                        grant_index[j] = m_idx;
                     end
                 end
             end
         end
     end
-
-    // Update round-robin pointers on granted transaction completion (when slave ACKs)
-    // always @(posedge clk or negedge rst_n) begin
-    //     if (!rst_n) begin
-    //         for (j = 0; j < NUM_SLAVES; j = j + 1) begin
-    //             rr_ptr[j] <= {GRANT_PTR_BITS{1'b0}};
-    //         end
-    //     end else begin
-    //         for (j = 0; j < NUM_SLAVES; j = j + 1) begin
-    //             // If the slave acknowledged a transaction, advance pointer to the granted master
-    //             // This gives next priority to the following master.
-    //             if (s_ack_i[j] && grant_valid[j]) begin
-    //                 // next rr_ptr becomes granted index
-    //                 rr_ptr[j] <= grant_index[j];
-    //             end
-    //         end
-    //     end
-    // end
 
     logic [NUM_SLAVES-1:0] any_grant;
     // Drive slave-side outputs by multiplexing the granted master's signals
@@ -202,7 +154,7 @@ module wb_xbar #(
             any_grant[j] = 1'b0;
             for (m = 0; m < NUM_MASTERS; m = m + 1) begin
                 if (grant_vector[j][m]) begin
-                    // any_grant[j] = 1'b1;
+                    any_grant[j] = 1'b1;
 
                     // assign to slave j slices
                     // s_cyc/stb/we
