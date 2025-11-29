@@ -32,6 +32,7 @@ VERILOG_FILES:
 - dir::../src/proc_wrapper.sv
 - dir::../src/racquet.sv
 - dir::../src/spi.sv
+- dir::../src/wb_queue.sv
 - dir::../ip/subservient/rtl/subservient.v
 - dir::../ip/subservient/rtl/subservient_gpio.v
 - dir::../ip/subservient/rtl/subservient_core.v
