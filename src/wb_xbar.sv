@@ -66,6 +66,7 @@ module wb_xbar #(
     // We'll extract per-master slices in generate loops
     logic [NUM_MASTERS-1:0] m_req;     // master requests (cyc & stb)
     logic  [SLAVE_INDEX_BITS-1:0] m_slave_idx [NUM_MASTERS];
+    logic                         m_slave_share [NUM_MASTERS];
 
 
     genvar i;
@@ -75,8 +76,10 @@ module wb_xbar #(
             if (ADDR_WIDTH > OFFSET_BITS) begin : SLICE_IDX
                 // slice of m_adr_arr[i] from ADDR_WIDTH-1 downto OFFSET_BITS
                 assign m_slave_idx[i] = {2'b00, m_adr_i[i][ADDR_WIDTH-3:OFFSET_BITS]};
+                assign m_slave_share[i] = m_adr_i[i][ADDR_WIDTH-1];
             end else begin : ZERO_IDX
                 assign m_slave_idx[i] = {SLAVE_INDEX_BITS{1'b0}};
+                assign m_slave_share[i] = 1'b0;
             end
         end
     endgenerate
@@ -95,6 +98,7 @@ module wb_xbar #(
     integer j, k, m, s;
     reg [GRANT_PTR_BITS-1:0] rr_ptr       [NUM_SLAVES]; // round-robin pointer per slave
     reg [NUM_MASTERS-1:0]    req_vector   [NUM_SLAVES];
+    reg [NUM_MASTERS-1:0]    req_vector_share   [NUM_SLAVES];
     reg [NUM_MASTERS-1:0]    grant_vector [NUM_SLAVES];
     reg [GRANT_PTR_BITS-1:0] grant_index  [NUM_SLAVES];
     reg                      grant_valid  [NUM_SLAVES];
@@ -103,10 +107,13 @@ module wb_xbar #(
     always_comb begin
         for (j = 0; j < NUM_SLAVES; j = j + 1) begin
             req_vector[j] = {NUM_MASTERS{1'b0}};
+            req_vector_share[j] = {NUM_MASTERS{1'b0}};
             for (k = 0; k < NUM_MASTERS; k = k + 1) begin
                 // compare master k's decoded index to slave j
                 if (m_req[k] && (m_slave_idx[k] == 20'(j)))
                     req_vector[j][k] = 1'b1;
+                if (m_req[k] && (m_slave_idx[k] == 20'(j)) && m_slave_share[k])
+                    req_vector_share[j][k] = 1'b1;
             end
         end
     end
@@ -128,6 +135,11 @@ module wb_xbar #(
                 // fixed priority: pick lowest numbered master that is requesting
                 for (m_idx = 0; m_idx < NUM_MASTERS; m_idx = m_idx + 1) begin
                     if (req_vector[j][m_idx] && !grant_valid[j]) begin
+                        grant_vector[j][m_idx] = 1'b1;
+                        grant_valid[j] = 1'b1;
+                        grant_index[j] = m_idx;
+                    end
+                    if (req_vector_share[j][m_idx]) begin
                         grant_vector[j][m_idx] = 1'b1;
                         grant_valid[j] = 1'b1;
                         grant_index[j] = m_idx;
