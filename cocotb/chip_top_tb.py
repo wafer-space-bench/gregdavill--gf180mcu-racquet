@@ -12,6 +12,9 @@ from cocotb.handle import *
 from cocotb.clock import Clock
 from cocotb.triggers import Timer, Edge, RisingEdge, FallingEdge, ClockCycles, First, ValueChange
 from cocotb_tools.runner import get_runner
+import tempfile
+import subprocess
+import shutil
 
 sim = os.getenv("SIM", "icarus")
 pdk_root = os.getenv("PDK_ROOT", Path("~/.ciel").expanduser())
@@ -45,6 +48,29 @@ async def value_change_packed_field(handle, start, stop=None):
         new_value = get_packed_field(handle, start, stop)
         value_changed = new_value != old_value
 
+def gcc_compile(asm: str) -> bytes:
+    tmp = tempfile.TemporaryDirectory()
+    try:
+        work = Path(tmp.name)
+        src = work / "prog.S"
+        obj = work / "prog.o"
+        out = work / "prog.bin"
+        link = Path(__file__).parent / "link.ld"
+        src.write_text(asm)
+
+        p = subprocess.run(["riscv64-unknown-elf-gcc", "-nostartfiles", "-march=rv32i", "-mabi=ilp32", "-T", str(link), "-o", str(obj), str(src)],
+                            capture_output=True, text=True)
+        if p.returncode != 0:
+            raise RuntimeError(f"compile failed: {p.stderr.strip()}")
+
+        p = subprocess.run(["riscv64-unknown-elf-objcopy", "-O", "binary", str(obj), str(out)],
+                            capture_output=True, text=True)
+        if p.returncode != 0:
+            raise RuntimeError(f"objcopy failed: {p.stderr.strip()}")
+        b = bytearray(out.read_bytes())
+        return b + bytearray(512 - len(b))
+    finally:
+        tmp.cleanup()
 
 async def set_defaults(dut):
     set_packed_field(dut.bidir_PAD, 4, value = 0b1)
@@ -96,47 +122,40 @@ async def test_counter(dut):
     # Wait for some time...
     await ClockCycles(dut.clk_PAD, 2)
 
-    instr0 = [
-        0x37, 0x05, 0x00, 0x40,
-        0x13, 0x05, 0x05, 0x00,
-        0x13, 0x03, 0x80, 0x00,
-        0x93, 0x02, 0x00, 0x00,
-        0x23, 0x00, 0x55, 0x00,
-        0x93, 0xC2, 0x12, 0x00,
-        0xB3, 0x73, 0x00, 0x00,
-        0x93, 0x83, 0x13, 0x00,
-        0xE3, 0x1E, 0x73, 0xFE,
-        0x6F, 0xF0, 0xDF, 0xFE,
-        0x00, 0x00, 0x00, 0x00,
-    ]
+    asm0 = """
+#define GPIO_BASE 0x40000000
 
-    instr0 += [0x00] * (512 - len(instr0))
+.globl _start
+_start: li	a0, GPIO_BASE
+        li	t1, 3
+        addi	t0, zero, 0
 
-    instr1 = [
-        0x37, 0x05, 0x00, 0x40,
-        0x13, 0x05, 0x05, 0x00,
-        0x13, 0x03, 0xF0, 0x00,
-        0x93, 0x02, 0x00, 0x00,
-        0x23, 0x00, 0x55, 0x00,
-        0x93, 0xC2, 0x12, 0x00,
-        0xB3, 0x73, 0x00, 0x00,
-        0x93, 0x83, 0x13, 0x00,
-        0xE3, 0x1E, 0x73, 0xFE,
-        0x6F, 0xF0, 0xDF, 0xFE,
-        0x00, 0x00, 0x00, 0x00,
-    ]
+bl1:    sb	t0, 0(a0)
+        xori	t0, t0, 1
 
-    instr1 += [0x00] * (512 - len(instr1))
+    	and	t2, zero, zero
+time1:	addi	t2, t2, 1
+        bne	t1, t2, time1
+        j	bl1
+"""
+    bin0 = gcc_compile(asm0)
+
+    for idx, b in enumerate(bin0):
+        dut.u_chip_core.gen_proc_wrapper[0].u_proc_wrapper.u_sram.mem[idx].value = LogicArray(b, 8)
+    for idx, b in enumerate(bin0):
+        dut.u_chip_core.gen_proc_wrapper[1].u_proc_wrapper.u_sram.mem[idx].value = LogicArray(b, 8)
+
+    # Cores are held in reset unless their SRAM is loaded. Fake loading to speed up sims
+    dut.u_chip_core.gen_proc_wrapper[0].u_proc_wrapper.state.value = Force(1)
+    dut.u_chip_core.gen_proc_wrapper[1].u_proc_wrapper.state.value = Force(1)
 
     rom = [
         0x00, 0x00, 0x00, 0x00,
         0xca, 0xfe, # preamble
-        0x10, 0x00, # LOAD
-        *instr0,
-
-        0x10, 0x00, # LOAD
-        *instr1,
-
+        # 0x10, 0x00, # LOAD
+        # *bin0,
+        # 0x10, 0x00, # LOAD
+        # *bin0,
         0x11, 0x00,
     ]
 
