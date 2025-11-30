@@ -77,7 +77,7 @@ module wb_queue (
 
     genvar j;
     generate
-        for (j = 0; j < NUM_QUEUES; j = j + 1) begin
+        for (j = 0; j < NUM_QUEUES; j = j + 1) begin : gen_queue
             always_ff @(posedge clk_i or negedge rst_n) begin
                 if (!rst_n) begin
                     reg_queue[j] <= '0;
@@ -102,7 +102,7 @@ module wb_queue (
     endgenerate
 
     generate
-        for (j = 0; j < NUM_NBLK_QUEUES; j = j + 1) begin
+        for (j = 0; j < NUM_NBLK_QUEUES; j = j + 1) begin : gen_nblk_queue
             always_ff @(posedge clk_i or negedge rst_n) begin
                 if (!rst_n) begin
                     reg_nblk_queue[j] <= '0;
@@ -125,7 +125,7 @@ module wb_queue (
     endgenerate
 
     generate
-        for (j = 0; j < NUM_FLAGS; j = j + 1) begin
+        for (j = 0; j < NUM_FLAGS; j = j + 1) begin : gen_flags
             // Set flag from write port
             assign flags[j] = (wr_active && wr_we_i) && (wr_adr_i[11:2] == 10'(FLAG0 + j));
         end
