@@ -33,7 +33,7 @@ def get_packed_field(handle, start, stop=None):
         return full_value[start:stop]
     
 def set_packed_field(handle, start, stop=None, *, value):
-    full_value = LogicArray('z' * 40, 40)
+    full_value = LogicArray('z' * 54)
     if stop is None:
         full_value[start] = value
     else:

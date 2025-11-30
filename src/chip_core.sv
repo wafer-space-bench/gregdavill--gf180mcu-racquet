@@ -4,9 +4,7 @@
 `default_nettype none
 
 module chip_core #(
-    parameter NUM_INPUT_PADS,
-    parameter NUM_BIDIR_PADS,
-    parameter NUM_ANALOG_PADS
+    parameter NUM_BIDIR_PADS
 ) (
 `ifdef USE_POWER_PINS
     inout wire VDD,
@@ -16,10 +14,6 @@ module chip_core #(
     input logic clk,   // clock
     input logic rst_n, // reset (active low)
 
-    input  logic [NUM_INPUT_PADS-1:0] input_in,  // Input value
-    output logic [NUM_INPUT_PADS-1:0] input_pu,  // Pull-up
-    output logic [NUM_INPUT_PADS-1:0] input_pd,  // Pull-down
-
     input  logic [NUM_BIDIR_PADS-1:0] bidir_in,   // Input value
     output logic [NUM_BIDIR_PADS-1:0] bidir_out,  // Output value
     output logic [NUM_BIDIR_PADS-1:0] bidir_oe,   // Output enable
@@ -27,28 +21,8 @@ module chip_core #(
     output logic [NUM_BIDIR_PADS-1:0] bidir_sl,   // Slew rate (0=fast, 1=slow)
     output logic [NUM_BIDIR_PADS-1:0] bidir_ie,   // Input enable
     output logic [NUM_BIDIR_PADS-1:0] bidir_pu,   // Pull-up
-    output logic [NUM_BIDIR_PADS-1:0] bidir_pd,    // Pull-down
-
-    inout  logic [NUM_ANALOG_PADS-1:0] analog  // Analog
+    output logic [NUM_BIDIR_PADS-1:0] bidir_pd    // Pull-down
 );
-
-    // See here for usage: https://gf180mcu-pdk.readthedocs.io/en/latest/IPs/IO/gf180mcu_fd_io/digital.html
-
-    // Disable pull-up and pull-down for input
-    assign input_pu = '0;
-    assign input_pd = '0;
-
-    // Set the bidir as output
-    // assign bidir_oe = '1;
-    assign bidir_ie = ~bidir_oe;
-    assign bidir_cs[6:0] = '0;
-    assign bidir_sl[6:0] = '0;
-    assign bidir_pu[6:0] = '0;
-    assign bidir_pd[6:0] = '0;
-
-    logic _unused;
-    assign _unused = &bidir_in;
-
 
     parameter memsize = 512;
     localparam aw = $clog2(memsize);
@@ -57,23 +31,6 @@ module chip_core #(
     wire spi_sck;
     wire spi_copi;
     wire spi_cipo;
-
-    wire o_gpio;
-
-
-    assign bidir_out[0] = '0;
-
-    assign bidir_out[1] = spi_cs;
-    assign bidir_out[2] = spi_sck;
-    assign bidir_out[3] = spi_copi;
-
-
-    assign spi_cipo = bidir_in[4];
-
-    assign bidir_oe[6:5] = '1;
-    assign bidir_oe[3:0] = '1;
-    assign bidir_oe[4] = '0;
-    assign bidir_out[6:4] = '0;
 
 
     logic [3:0] gpio_a_alt_in[32];
@@ -284,14 +241,39 @@ module chip_core #(
     assign wb_resp_err[3] = '0;
 
 
+
+    // Set the bidir as output
+    // assign bidir_oe = '1;
+    assign bidir_ie = ~bidir_oe;
+    assign bidir_cs[53:32] = '0;
+    assign bidir_sl[53:32] = '0;
+    assign bidir_pu[53:32] = '0;
+    assign bidir_pd[53:32] = '0;
+
+    assign bidir_out[32] = spi_cs;
+    assign bidir_out[33] = spi_sck;
+    assign bidir_out[34] = spi_copi;
+    assign bidir_out[35] = 1'b0;
+    assign spi_cipo = bidir_in[35];
+
+    assign bidir_oe[34:32] = '1;
+    assign bidir_oe[35] = '0;
+    assign bidir_oe[53:36] = '1;
+    assign bidir_out[53:36] = '0;
+
+    logic _unused;
+    assign _unused = &bidir_in[53:32];
+
+    // See here for usage: https://gf180mcu-pdk.readthedocs.io/en/latest/IPs/IO/gf180mcu_fd_io/digital.html
+
     // GPIO A connections to padframe
-    assign bidir_out[39:7] = gpio_a_out;
-    assign bidir_oe[39:7] = gpio_a_dir;
-    assign bidir_pd[39:7] = gpio_a_pd;
-    assign bidir_pu[39:7] = gpio_a_pu;
-    assign bidir_sl[39:7] = gpio_a_slew;
-    assign bidir_cs[39:7] = gpio_a_schmit;
-    assign gpio_a_in = bidir_in[39:7];
+    assign bidir_out[31:0] = gpio_a_out;
+    assign bidir_oe[31:0] = gpio_a_dir;
+    assign bidir_pd[31:0] = gpio_a_pd;
+    assign bidir_pu[31:0] = gpio_a_pu;
+    assign bidir_sl[31:0] = gpio_a_slew;
+    assign bidir_cs[31:0] = gpio_a_schmit;
+    assign gpio_a_in = bidir_in[31:0];
 
     // Hook up peripherals
     assign gpio_a_alt_out[0] = {1'b0, 1'b0, uart0_tx, 1'b0};
