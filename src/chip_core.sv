@@ -27,12 +27,6 @@ module chip_core #(
     parameter memsize = 512;
     localparam aw = $clog2(memsize);
 
-    wire spi_cs;
-    wire spi_sck;
-    wire spi_copi;
-    wire spi_cipo;
-
-
     logic [3:0] gpio_a_alt_in[32];
     logic [3:0] gpio_a_alt_out[32];
     logic [3:0] gpio_a_alt_dir[32];
@@ -46,13 +40,28 @@ module chip_core #(
     logic [31:0] gpio_a_pu;
     logic [31:0] gpio_a_pd;
 
+    localparam integer GPIOB_NUM = 22;
+    logic [3:0] gpio_b_alt_in[GPIOB_NUM];
+    logic [3:0] gpio_b_alt_out[GPIOB_NUM];
+    logic [3:0] gpio_b_alt_dir[GPIOB_NUM];
+
+    logic [1:0] gpio_b_alt[GPIOB_NUM];
+    logic [GPIOB_NUM-1:0] gpio_b_in;
+    logic [GPIOB_NUM-1:0] gpio_b_out;
+    logic [GPIOB_NUM-1:0] gpio_b_dir;
+    logic [GPIOB_NUM-1:0] gpio_b_schmit;
+    logic [GPIOB_NUM-1:0] gpio_b_slew;
+    logic [GPIOB_NUM-1:0] gpio_b_pu;
+    logic [GPIOB_NUM-1:0] gpio_b_pd;
+
     localparam integer NUM_PROC_CORES = 28;
-    localparam integer NUM_WB_RESPONDERS = 4;
+    localparam integer NUM_WB_RESPONDERS = 5;
 
     localparam integer GPIOA_IDX = 0;
-    localparam integer QUEUE0_WR_IDX = 1;
-    localparam integer QUEUE0_RD_IDX = 2;
-    localparam integer UART0_IDX = 3;
+    localparam integer GPIOB_IDX = 1;
+    localparam integer QUEUE0_WR_IDX = 2;
+    localparam integer QUEUE0_RD_IDX = 3;
+    localparam integer UART0_IDX = 4;
     genvar i;
 
     // Controller WB busses
@@ -119,14 +128,19 @@ module chip_core #(
     // Last core ready signal tied high
     assign loader_ready[NUM_PROC_CORES] = 1'b1;
 
+    wire cfg_spi_cs;
+    wire cfg_spi_sck;
+    wire cfg_spi_copi;
+    wire cfg_spi_cipo;
+
     racquet u_racquet (
         .clk  (clk),
         .rst_n(rst_n),
 
-        .cs  (spi_cs),
-        .copi(spi_copi),
-        .cipo(spi_cipo),
-        .sck (spi_sck),
+        .cs  (cfg_spi_cs),
+        .copi(cfg_spi_copi),
+        .cipo(cfg_spi_cipo),
+        .sck (cfg_spi_sck),
 
         .loader_enabled(loader_enabled),
 
@@ -199,6 +213,44 @@ module chip_core #(
     );
     assign wb_resp_err[GPIOA_IDX] = '0;  // not used by peripheral
 
+    localparam logic [GPIOB_NUM*2-1:0] GPIOB_INIT_ALT = {{18{2'b00}}, {4{2'b01}}};
+    // ideally this is cleaner as an unpacked array. But iverilog doesn't support unpacked array parameters:
+    // error: sorry: unpacked array parameters are not supported yet
+    // Create a packed array to select the the cfg_spi alt mode on reset
+    wb_gpio #(
+        .GPIO_NUM(GPIOB_NUM),
+        .INIT_ALT(GPIOB_INIT_ALT)
+    ) u_gpiob (
+        .clk_i(clk),
+        .rst_n(rst_n),
+
+        .adr_i(wb_resp_adr[GPIOB_IDX]),
+        .dat_i(wb_resp_wdt[GPIOB_IDX]),
+        .dat_o(wb_resp_rdt[GPIOB_IDX]),
+        .sel_i(wb_resp_sel[GPIOB_IDX]),
+        .we_i (wb_resp_we[GPIOB_IDX]),
+        .stb_i(wb_resp_stb[GPIOB_IDX]),
+        .cyc_i(wb_resp_cyc[GPIOB_IDX]),
+        .ack_o(wb_resp_ack[GPIOB_IDX]),
+
+        // ALT peripheral connections
+        .alt_in_o (gpio_b_alt_in),
+        .alt_out_i (gpio_b_alt_out),
+        .alt_dir_i (gpio_b_alt_dir),
+
+        // GPIO control
+        .io_out_o (gpio_b_out),
+        .io_dir_o (gpio_b_dir),
+        .io_in_i  (gpio_b_in),
+        .io_pu_o  (gpio_b_pu),
+        .io_pd_o  (gpio_b_pd),
+        .io_slew_o(gpio_b_slew),
+        .io_schmit_o(gpio_b_schmit),
+
+        .io_alt_o(gpio_b_alt)
+    );
+    assign wb_resp_err[GPIOB_IDX] = '0;  // not used by peripheral
+
     wb_queue u_queue0 (
         .clk_i(clk),
         .rst_n(rst_n),
@@ -247,38 +299,36 @@ module chip_core #(
 
 
 
-    // Set the bidir as output
-    // assign bidir_oe = '1;
-    assign bidir_ie = ~bidir_oe;
-    assign bidir_cs[53:32] = '0;
-    assign bidir_sl[53:32] = '0;
-    assign bidir_pu[53:32] = '0;
-    assign bidir_pd[53:32] = '0;
 
-    assign bidir_out[32] = spi_cs;
-    assign bidir_out[33] = spi_sck;
-    assign bidir_out[34] = spi_copi;
-    assign bidir_out[35] = 1'b0;
-    assign spi_cipo = bidir_in[35];
-
-    assign bidir_oe[34:32] = '1;
-    assign bidir_oe[35] = '0;
-    assign bidir_oe[53:36] = '1;
-    assign bidir_out[53:36] = '0;
-
-    logic _unused;
-    assign _unused = &bidir_in[53:32];
+    // assign bidir_out[32] = spi_cs;
+    // assign bidir_out[33] = spi_sck;
+    // assign bidir_out[34] = spi_copi;
+    // assign bidir_out[35] = 1'b0;
+    // assign spi_cipo = bidir_in[35];
 
     // See here for usage: https://gf180mcu-pdk.readthedocs.io/en/latest/IPs/IO/gf180mcu_fd_io/digital.html
 
     // GPIO A connections to padframe
     assign bidir_out[31:0] = gpio_a_out;
     assign bidir_oe[31:0] = gpio_a_dir;
+    assign bidir_ie[31:0] = ~gpio_a_dir;
     assign bidir_pd[31:0] = gpio_a_pd;
     assign bidir_pu[31:0] = gpio_a_pu;
     assign bidir_sl[31:0] = gpio_a_slew;
     assign bidir_cs[31:0] = gpio_a_schmit;
     assign gpio_a_in = bidir_in[31:0];
+
+    // GPIO B connections to padframe
+    assign bidir_out[53:32] = gpio_b_out;
+    assign bidir_oe[53:32] = gpio_b_dir;
+    assign bidir_ie[53:32] = ~gpio_b_dir;
+    assign bidir_pd[53:32] = gpio_b_pd;
+    assign bidir_pu[53:32] = gpio_b_pu;
+    assign bidir_sl[53:32] = gpio_b_slew;
+    assign bidir_cs[53:32] = gpio_b_schmit;
+    assign gpio_b_in = bidir_in[53:32];
+
+
 
     // Hook up peripherals
     assign gpio_a_alt_out[0] = {1'b0, 1'b0, uart0_tx, 1'b0};
@@ -291,9 +341,30 @@ module chip_core #(
 
     genvar j;
     generate
-        for (j = 2; j < 32; j = j + 1) begin : gen_defaults
+        for (j = 2; j < 32; j = j + 1) begin : gen_gpioa_defaults
             assign gpio_a_alt_out[j] = '0;
             assign gpio_a_alt_dir[j] = '0;
+        end
+    endgenerate
+
+
+    assign gpio_b_alt_out[0] = {1'b0, 1'b0, cfg_spi_cs, 1'b0};
+    assign gpio_b_alt_dir[0] = {1'b0, 1'b0, 1'b1, 1'b0};
+
+    assign gpio_b_alt_out[1] = {1'b0, 1'b0, cfg_spi_sck, 1'b0};
+    assign gpio_b_alt_dir[1] = {1'b0, 1'b0, 1'b1, 1'b0};
+
+    assign gpio_b_alt_out[2] = {1'b0, 1'b0, cfg_spi_copi, 1'b0};
+    assign gpio_b_alt_dir[2] = {1'b0, 1'b0, 1'b1, 1'b0};
+
+    assign gpio_b_alt_out[3] = {1'b0, 1'b0, 1'b0, 1'b0};
+    assign gpio_b_alt_dir[3] = {1'b0, 1'b0, 1'b0, 1'b0};
+    assign cfg_spi_cipo = gpio_b_alt_in[3][1];
+
+    generate
+        for (j = 4; j < GPIOB_NUM; j = j + 1) begin : gen_gpiob_defaults
+            assign gpio_b_alt_out[j] = '0;
+            assign gpio_b_alt_dir[j] = '0;
         end
     endgenerate
 
