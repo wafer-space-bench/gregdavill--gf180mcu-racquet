@@ -214,6 +214,7 @@ def chip_top_runner():
         sources.append(proj_path / "../src/chip_core.sv")
         sources.append(proj_path / "../src/proc_wrapper.sv")
         sources.append(proj_path / "../src/wb_xbar.sv")
+        sources.append(proj_path / "../src/wb_gpio.sv")
         sources.append(proj_path / "../src/wb_uart.sv")
         sources.append(proj_path / "../src/subservient/subservient_core.v")
         sources.append(proj_path / "../ip/subservient/rtl/subservient_gpio.v")

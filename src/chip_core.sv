@@ -13,23 +13,23 @@ module chip_core #(
     inout wire VSS,
 `endif
 
-    input wire clk,   // clock
-    input wire rst_n, // reset (active low)
+    input logic clk,   // clock
+    input logic rst_n, // reset (active low)
 
-    input  wire [NUM_INPUT_PADS-1:0] input_in,  // Input value
-    output wire [NUM_INPUT_PADS-1:0] input_pu,  // Pull-up
-    output wire [NUM_INPUT_PADS-1:0] input_pd,  // Pull-down
+    input  logic [NUM_INPUT_PADS-1:0] input_in,  // Input value
+    output logic [NUM_INPUT_PADS-1:0] input_pu,  // Pull-up
+    output logic [NUM_INPUT_PADS-1:0] input_pd,  // Pull-down
 
-    input wire [NUM_BIDIR_PADS-1:0] bidir_in,  // Input value
-    output wire [NUM_BIDIR_PADS-1:0] bidir_out,  // Output value
-    output wire [NUM_BIDIR_PADS-1:0] bidir_oe,  // Output enable
-    output wire [NUM_BIDIR_PADS-1:0] bidir_cs,   // Input type (0=CMOS Buffer, 1=Schmitt Trigger)
-    output wire [NUM_BIDIR_PADS-1:0] bidir_sl,  // Slew rate (0=fast, 1=slow)
-    output wire [NUM_BIDIR_PADS-1:0] bidir_ie,  // Input enable
-    output wire [NUM_BIDIR_PADS-1:0] bidir_pu,  // Pull-up
-    output wire [NUM_BIDIR_PADS-1:0] bidir_pd,  // Pull-down
+    input  logic [NUM_BIDIR_PADS-1:0] bidir_in,   // Input value
+    output logic [NUM_BIDIR_PADS-1:0] bidir_out,  // Output value
+    output logic [NUM_BIDIR_PADS-1:0] bidir_oe,   // Output enable
+    output logic [NUM_BIDIR_PADS-1:0] bidir_cs,   // Input type (0=CMOS Buffer, 1=Schmitt Trigger)
+    output logic [NUM_BIDIR_PADS-1:0] bidir_sl,   // Slew rate (0=fast, 1=slow)
+    output logic [NUM_BIDIR_PADS-1:0] bidir_ie,   // Input enable
+    output logic [NUM_BIDIR_PADS-1:0] bidir_pu,   // Pull-up
+    output logic [NUM_BIDIR_PADS-1:0] bidir_pd,    // Pull-down
 
-    inout  wire [NUM_ANALOG_PADS-1:0] analog  // Analog
+    inout  logic [NUM_ANALOG_PADS-1:0] analog  // Analog
 );
 
     // See here for usage: https://gf180mcu-pdk.readthedocs.io/en/latest/IPs/IO/gf180mcu_fd_io/digital.html
@@ -40,11 +40,11 @@ module chip_core #(
 
     // Set the bidir as output
     // assign bidir_oe = '1;
-    assign bidir_cs = '0;
-    assign bidir_sl = '0;
     assign bidir_ie = ~bidir_oe;
-    assign bidir_pu = '0;
-    assign bidir_pd = '0;
+    assign bidir_cs[6:0] = '0;
+    assign bidir_sl[6:0] = '0;
+    assign bidir_pu[6:0] = '0;
+    assign bidir_pd[6:0] = '0;
 
     logic _unused;
     assign _unused = &bidir_in;
@@ -61,7 +61,7 @@ module chip_core #(
     wire o_gpio;
 
 
-    assign bidir_out[0] = o_gpio;
+    assign bidir_out[0] = '0;
 
     assign bidir_out[1] = spi_cs;
     assign bidir_out[2] = spi_sck;
@@ -70,10 +70,24 @@ module chip_core #(
 
     assign spi_cipo = bidir_in[4];
 
-    assign bidir_oe[NUM_BIDIR_PADS-1:5] = '1;
+    assign bidir_oe[6:5] = '1;
     assign bidir_oe[3:0] = '1;
     assign bidir_oe[4] = '0;
-    assign bidir_out[NUM_BIDIR_PADS-1:4] = '0;
+    assign bidir_out[6:4] = '0;
+
+
+    logic [3:0] gpio_a_alt_in[32];
+    logic [3:0] gpio_a_alt_out[32];
+    logic [3:0] gpio_a_alt_dir[32];
+
+    logic [1:0] gpio_a_alt[32];
+    logic [31:0] gpio_a_in;
+    logic [31:0] gpio_a_out;
+    logic [31:0] gpio_a_dir;
+    logic [31:0] gpio_a_schmit;
+    logic [31:0] gpio_a_slew;
+    logic [31:0] gpio_a_pu;
+    logic [31:0] gpio_a_pd;
 
     localparam integer NUM_PROC_CORES = 28;
     localparam integer NUM_WB_RESPONDERS = 4;
@@ -189,21 +203,39 @@ module chip_core #(
         .s_err_i(wb_resp_err)
     );
 
-    assign wb_resp_err[0] = '0;
-
     // Peripherals
-    subservient_gpio u_gpio (
-        .i_wb_clk(clk),
-        .i_wb_rst(~rst_n),
-        .i_wb_dat(wb_resp_wdt[0][0]),
-        .i_wb_we (wb_resp_we[0]),
-        .i_wb_stb(wb_resp_stb[0]),
-        .o_wb_rdt(wb_resp_rdt[0][0]),
-        .o_wb_ack(wb_resp_ack[0]),
-        .o_gpio  (o_gpio)
-    );
+    wb_gpio #(
+        .GPIO_NUM(32)
+    ) u_gpio0 (
+        .clk_i(clk),
+        .rst_n(rst_n),
 
-    assign wb_resp_rdt[0][31:1] = '0;
+        .adr_i(wb_resp_adr[0]),
+        .dat_i(wb_resp_wdt[0]),
+        .dat_o(wb_resp_rdt[0]),
+        .sel_i(wb_resp_sel[0]),
+        .we_i (wb_resp_we[0]),
+        .stb_i(wb_resp_stb[0]),
+        .cyc_i(wb_resp_cyc[0]),
+        .ack_o(wb_resp_ack[0]),
+
+        // ALT peripheral connections
+        .alt_in_o (gpio_a_alt_in),
+        .alt_out_i (gpio_a_alt_out),
+        .alt_dir_i (gpio_a_alt_dir),
+
+        // GPIO control
+        .io_out_o (gpio_a_out),
+        .io_dir_o (gpio_a_dir),
+        .io_in_i  (gpio_a_in),
+        .io_pu_o  (gpio_a_pu),
+        .io_pd_o  (gpio_a_pd),
+        .io_slew_o(gpio_a_slew),
+        .io_schmit_o(gpio_a_schmit),
+
+        .io_alt_o(gpio_a_alt)
+    );
+    assign wb_resp_err[0] = '0;  // not used by peripheral
 
     wb_queue u_queue0 (
         .clk_i(clk),
@@ -231,6 +263,7 @@ module chip_core #(
     assign wb_resp_err[2] = '0;
 
 
+    logic uart0_tx, uart0_rx;
     wb_uart u_uart0 (
         .clk_i(clk),
         .rst_n(rst_n),
@@ -245,10 +278,38 @@ module chip_core #(
         .ack_o(wb_resp_ack[3]),
 
         // UART pins
-        .tx_o(),
-        .rx_i(1'b1)
+        .tx_o(uart0_tx),
+        .rx_i(uart0_rx)
     );
     assign wb_resp_err[3] = '0;
+
+
+    // GPIO A connections to padframe
+    assign bidir_out[39:7] = gpio_a_out;
+    assign bidir_oe[39:7] = gpio_a_dir;
+    assign bidir_pd[39:7] = gpio_a_pd;
+    assign bidir_pu[39:7] = gpio_a_pu;
+    assign bidir_sl[39:7] = gpio_a_slew;
+    assign bidir_cs[39:7] = gpio_a_schmit;
+    assign gpio_a_in = bidir_in[39:7];
+
+    // Hook up peripherals
+    assign gpio_a_alt_out[0] = {1'b0, 1'b0, uart0_tx, 1'b0};
+    assign gpio_a_alt_dir[0] = {1'b0, 1'b0, 1'b1, 1'b0};
+
+    assign gpio_a_alt_out[1] = {1'b0, uart0_tx, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[1] = {1'b0, 1'b1, 1'b0, 1'b0};
+
+    assign uart0_rx = (gpio_a_alt_in[0][2] | gpio_a_alt_in[1][1]);
+
+    genvar j;
+    generate
+        for (j = 2; j < 32; j = j + 1) begin : gen_defaults
+            assign gpio_a_alt_out[j] = '0;
+            assign gpio_a_alt_dir[j] = '0;
+        end
+    endgenerate
+
 
 
 endmodule
