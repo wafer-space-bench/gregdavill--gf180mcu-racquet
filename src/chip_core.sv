@@ -75,7 +75,7 @@ module chip_core #(
     assign bidir_oe[4] = '0;
     assign bidir_out[NUM_BIDIR_PADS-1:4] = '0;
 
-    localparam integer NUM_PROC_CORES = 4;
+    localparam integer NUM_PROC_CORES = 28;
     localparam integer NUM_WB_RESPONDERS = 3;
     genvar i;
 
