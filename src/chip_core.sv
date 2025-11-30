@@ -55,13 +55,14 @@ module chip_core #(
     logic [GPIOB_NUM-1:0] gpio_b_pd;
 
     localparam integer NUM_PROC_CORES = 28;
-    localparam integer NUM_WB_RESPONDERS = 5;
+    localparam integer NUM_WB_RESPONDERS = 6;
 
     localparam integer GPIOA_IDX = 0;
     localparam integer GPIOB_IDX = 1;
     localparam integer QUEUE0_WR_IDX = 2;
     localparam integer QUEUE0_RD_IDX = 3;
     localparam integer UART0_IDX = 4;
+    localparam integer TIMER0_IDX = 5;
     genvar i;
 
     // Controller WB busses
@@ -297,14 +298,28 @@ module chip_core #(
     );
     assign wb_resp_err[UART0_IDX] = '0;
 
+    logic [7:0] timer0_out;
+    wb_timer #(
+        .TIMER_NUM(4),
+        .TIMER_CMP(4),
+        .TIMER_OUTPUTS(8)
+    ) u_timer0 (
+        .clk_i(clk),
+        .rst_n(rst_n),
 
+        .adr_i(wb_resp_adr[TIMER0_IDX]),
+        .dat_i(wb_resp_wdt[TIMER0_IDX]),
+        .dat_o(wb_resp_rdt[TIMER0_IDX]),
+        .sel_i(wb_resp_sel[TIMER0_IDX]),
+        .we_i (wb_resp_we[TIMER0_IDX]),
+        .stb_i(wb_resp_stb[TIMER0_IDX]),
+        .cyc_i(wb_resp_cyc[TIMER0_IDX]),
+        .ack_o(wb_resp_ack[TIMER0_IDX]),
 
+        .timer_out(timer0_out)
+    );
+    assign wb_resp_err[TIMER0_IDX] = '0;  // not used by peripheral
 
-    // assign bidir_out[32] = spi_cs;
-    // assign bidir_out[33] = spi_sck;
-    // assign bidir_out[34] = spi_copi;
-    // assign bidir_out[35] = 1'b0;
-    // assign spi_cipo = bidir_in[35];
 
     // See here for usage: https://gf180mcu-pdk.readthedocs.io/en/latest/IPs/IO/gf180mcu_fd_io/digital.html
 
@@ -328,20 +343,38 @@ module chip_core #(
     assign bidir_cs[53:32] = gpio_b_schmit;
     assign gpio_b_in = bidir_in[53:32];
 
-
-
     // Hook up peripherals
-    assign gpio_a_alt_out[0] = {1'b0, 1'b0, uart0_tx, 1'b0};
-    assign gpio_a_alt_dir[0] = {1'b0, 1'b0, 1'b1, 1'b0};
+    assign gpio_a_alt_out[0] = {timer0_out[0], 1'b0, uart0_tx, 1'b0};
+    assign gpio_a_alt_dir[0] = {1'b1, 1'b0, 1'b1, 1'b0};
 
-    assign gpio_a_alt_out[1] = {1'b0, uart0_tx, 1'b0, 1'b0};
-    assign gpio_a_alt_dir[1] = {1'b0, 1'b1, 1'b0, 1'b0};
+    assign gpio_a_alt_out[1] = {timer0_out[1], uart0_tx, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[1] = {1'b1, 1'b1, 1'b0, 1'b0};
 
+    assign gpio_a_alt_out[2] = {timer0_out[2], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[2] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[3] = {timer0_out[3], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[3] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[4] = {timer0_out[4], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[4] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[5] = {timer0_out[5], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[5] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[6] = {timer0_out[6], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[6] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[7] = {timer0_out[7], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[7] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
     assign uart0_rx = (gpio_a_alt_in[0][2] | gpio_a_alt_in[1][1]);
+
+
 
     genvar j;
     generate
-        for (j = 2; j < 32; j = j + 1) begin : gen_gpioa_defaults
+        for (j = 8; j < 32; j = j + 1) begin : gen_gpioa_defaults
             assign gpio_a_alt_out[j] = '0;
             assign gpio_a_alt_dir[j] = '0;
         end
