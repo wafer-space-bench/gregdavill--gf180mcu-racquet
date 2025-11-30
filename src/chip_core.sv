@@ -48,6 +48,11 @@ module chip_core #(
 
     localparam integer NUM_PROC_CORES = 28;
     localparam integer NUM_WB_RESPONDERS = 4;
+
+    localparam integer GPIOA_IDX = 0;
+    localparam integer QUEUE0_WR_IDX = 1;
+    localparam integer QUEUE0_RD_IDX = 2;
+    localparam integer UART0_IDX = 3;
     genvar i;
 
     // Controller WB busses
@@ -163,18 +168,18 @@ module chip_core #(
     // Peripherals
     wb_gpio #(
         .GPIO_NUM(32)
-    ) u_gpio0 (
+    ) u_gpioa (
         .clk_i(clk),
         .rst_n(rst_n),
 
-        .adr_i(wb_resp_adr[0]),
-        .dat_i(wb_resp_wdt[0]),
-        .dat_o(wb_resp_rdt[0]),
-        .sel_i(wb_resp_sel[0]),
-        .we_i (wb_resp_we[0]),
-        .stb_i(wb_resp_stb[0]),
-        .cyc_i(wb_resp_cyc[0]),
-        .ack_o(wb_resp_ack[0]),
+        .adr_i(wb_resp_adr[GPIOA_IDX]),
+        .dat_i(wb_resp_wdt[GPIOA_IDX]),
+        .dat_o(wb_resp_rdt[GPIOA_IDX]),
+        .sel_i(wb_resp_sel[GPIOA_IDX]),
+        .we_i (wb_resp_we[GPIOA_IDX]),
+        .stb_i(wb_resp_stb[GPIOA_IDX]),
+        .cyc_i(wb_resp_cyc[GPIOA_IDX]),
+        .ack_o(wb_resp_ack[GPIOA_IDX]),
 
         // ALT peripheral connections
         .alt_in_o (gpio_a_alt_in),
@@ -192,32 +197,32 @@ module chip_core #(
 
         .io_alt_o(gpio_a_alt)
     );
-    assign wb_resp_err[0] = '0;  // not used by peripheral
+    assign wb_resp_err[GPIOA_IDX] = '0;  // not used by peripheral
 
     wb_queue u_queue0 (
         .clk_i(clk),
         .rst_n(rst_n),
 
-        .wr_cyc_i(wb_resp_cyc[1]),
-        .wr_stb_i(wb_resp_stb[1]),
-        .wr_we_i (wb_resp_we[1]),
-        .wr_sel_i(wb_resp_sel[1]),
-        .wr_adr_i(wb_resp_adr[1]),
-        .wr_dat_i(wb_resp_wdt[1]),
-        .wr_dat_o(wb_resp_rdt[1]),
-        .wr_ack_o(wb_resp_ack[1]),
+        .wr_cyc_i(wb_resp_cyc[QUEUE0_WR_IDX]),
+        .wr_stb_i(wb_resp_stb[QUEUE0_WR_IDX]),
+        .wr_we_i (wb_resp_we[QUEUE0_WR_IDX]),
+        .wr_sel_i(wb_resp_sel[QUEUE0_WR_IDX]),
+        .wr_adr_i(wb_resp_adr[QUEUE0_WR_IDX]),
+        .wr_dat_i(wb_resp_wdt[QUEUE0_WR_IDX]),
+        .wr_dat_o(wb_resp_rdt[QUEUE0_WR_IDX]),
+        .wr_ack_o(wb_resp_ack[QUEUE0_WR_IDX]),
 
-        .rd_cyc_i(wb_resp_cyc[2]),
-        .rd_stb_i(wb_resp_stb[2]),
-        .rd_we_i (wb_resp_we[2]),
-        .rd_sel_i(wb_resp_sel[2]),
-        .rd_adr_i(wb_resp_adr[2]),
-        .rd_dat_i(wb_resp_wdt[2]),
-        .rd_dat_o(wb_resp_rdt[2]),
-        .rd_ack_o(wb_resp_ack[2])
+        .rd_cyc_i(wb_resp_cyc[QUEUE0_RD_IDX]),
+        .rd_stb_i(wb_resp_stb[QUEUE0_RD_IDX]),
+        .rd_we_i (wb_resp_we[QUEUE0_RD_IDX]),
+        .rd_sel_i(wb_resp_sel[QUEUE0_RD_IDX]),
+        .rd_adr_i(wb_resp_adr[QUEUE0_RD_IDX]),
+        .rd_dat_i(wb_resp_wdt[QUEUE0_RD_IDX]),
+        .rd_dat_o(wb_resp_rdt[QUEUE0_RD_IDX]),
+        .rd_ack_o(wb_resp_ack[QUEUE0_RD_IDX])
     );
-    assign wb_resp_err[1] = '0;
-    assign wb_resp_err[2] = '0;
+    assign wb_resp_err[QUEUE0_WR_IDX] = '0;
+    assign wb_resp_err[QUEUE0_RD_IDX] = '0;
 
 
     logic uart0_tx, uart0_rx;
@@ -225,20 +230,20 @@ module chip_core #(
         .clk_i(clk),
         .rst_n(rst_n),
 
-        .adr_i(wb_resp_adr[3]),
-        .dat_i(wb_resp_wdt[3]),
-        .dat_o(wb_resp_rdt[3]),
-        .sel_i(wb_resp_sel[3]),
-        .we_i (wb_resp_we[3]),
-        .stb_i(wb_resp_stb[3]),
-        .cyc_i(wb_resp_cyc[3]),
-        .ack_o(wb_resp_ack[3]),
+        .adr_i(wb_resp_adr[UART0_IDX]),
+        .dat_i(wb_resp_wdt[UART0_IDX]),
+        .dat_o(wb_resp_rdt[UART0_IDX]),
+        .sel_i(wb_resp_sel[UART0_IDX]),
+        .we_i (wb_resp_we[UART0_IDX]),
+        .stb_i(wb_resp_stb[UART0_IDX]),
+        .cyc_i(wb_resp_cyc[UART0_IDX]),
+        .ack_o(wb_resp_ack[UART0_IDX]),
 
         // UART pins
         .tx_o(uart0_tx),
         .rx_i(uart0_rx)
     );
-    assign wb_resp_err[3] = '0;
+    assign wb_resp_err[UART0_IDX] = '0;
 
 
 
@@ -291,6 +296,9 @@ module chip_core #(
             assign gpio_a_alt_dir[j] = '0;
         end
     endgenerate
+
+
+
 
 
 
