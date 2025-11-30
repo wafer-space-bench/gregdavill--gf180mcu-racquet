@@ -73,7 +73,7 @@ def gcc_compile(asm: str) -> bytes:
         tmp.cleanup()
 
 async def set_defaults(dut):
-    set_packed_field(dut.bidir_PAD, 4, value = 0b1)
+    set_packed_field(dut.bidir_PAD, 35, value = 0b1)
 
 async def enable_power(dut):
     dut.VDD.value = 1
@@ -175,15 +175,15 @@ bl1:    lb	t0, 0(a0)
 
     
     # Simulate SPI FLASH READ
-    set_packed_field(dut.bidir_PAD, 4, value = 0b1)
+    set_packed_field(dut.bidir_PAD, 35, value = 0b1)
     for b in rom:
         for _ in range(8):
-            set_packed_field(dut.bidir_PAD, 4, value = bool(b & 0x80))
+            set_packed_field(dut.bidir_PAD, 35, value = bool(b & 0x80))
 
             b <<= 1
 
-            await value_change_packed_field(dut.bidir_PAD, 2)
-            await value_change_packed_field(dut.bidir_PAD, 2)
+            await value_change_packed_field(dut.bidir_PAD, 33)
+            await value_change_packed_field(dut.bidir_PAD, 33)
 
 
     # Wait for a number of clock cycles
