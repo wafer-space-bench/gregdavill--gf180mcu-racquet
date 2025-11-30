@@ -76,7 +76,7 @@ module chip_core #(
     assign bidir_out[NUM_BIDIR_PADS-1:4] = '0;
 
     localparam integer NUM_PROC_CORES = 28;
-    localparam integer NUM_WB_RESPONDERS = 3;
+    localparam integer NUM_WB_RESPONDERS = 4;
     genvar i;
 
     // Controller WB busses
@@ -229,6 +229,26 @@ module chip_core #(
     );
     assign wb_resp_err[1] = '0;
     assign wb_resp_err[2] = '0;
+
+
+    wb_uart u_uart0 (
+        .clk_i(clk),
+        .rst_n(rst_n),
+
+        .adr_i(wb_resp_adr[3]),
+        .dat_i(wb_resp_wdt[3]),
+        .dat_o(wb_resp_rdt[3]),
+        .sel_i(wb_resp_sel[3]),
+        .we_i (wb_resp_we[3]),
+        .stb_i(wb_resp_stb[3]),
+        .cyc_i(wb_resp_cyc[3]),
+        .ack_o(wb_resp_ack[3]),
+
+        // UART pins
+        .tx_o(),
+        .rx_i(1'b1)
+    );
+    assign wb_resp_err[3] = '0;
 
 
 endmodule
