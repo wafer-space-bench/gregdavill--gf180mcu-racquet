@@ -1,5 +1,6 @@
 module wb_gpio #(
-    parameter GPIO_NUM = 8
+    parameter GPIO_NUM = 8,
+    parameter logic [(GPIO_NUM*2)-1:0] INIT_ALT = '0
 ) (
     input logic clk_i,
     input logic rst_n,
@@ -300,7 +301,7 @@ module wb_gpio #(
             assign reg_ = reg_alt[j];
             always_ff @(posedge clk_i or negedge rst_n) begin
                 if (!rst_n) begin
-                    reg_alt[j] <= 2'd0;
+                    reg_alt[j] <= INIT_ALT[j*2+:2];
                 end else begin
                     if (wb_active && we_i && sel_i[0]) begin
                         if (adr_i[11:2] == 10'(ALT0 + j)) begin
