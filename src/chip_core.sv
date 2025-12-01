@@ -299,10 +299,12 @@ module chip_core #(
     assign wb_resp_err[UART0_IDX] = '0;
 
     logic [7:0] timer0_out;
+    logic [7:0] timer0_in;
     wb_timer #(
         .TIMER_NUM(4),
         .TIMER_CMP(4),
-        .TIMER_OUTPUTS(8)
+        .TIMER_OUTPUTS(8),
+        .TIMER_INPUTS(8)
     ) u_timer0 (
         .clk_i(clk),
         .rst_n(rst_n),
@@ -316,7 +318,8 @@ module chip_core #(
         .cyc_i(wb_resp_cyc[TIMER0_IDX]),
         .ack_o(wb_resp_ack[TIMER0_IDX]),
 
-        .timer_out(timer0_out)
+        .timer_out(timer0_out),
+        .timer_in(timer0_in)
     );
     assign wb_resp_err[TIMER0_IDX] = '0;  // not used by peripheral
 
@@ -369,6 +372,15 @@ module chip_core #(
     assign gpio_a_alt_dir[7] = {1'b1, 1'b0, 1'b0, 1'b0};
     
     assign uart0_rx = (gpio_a_alt_in[0][2] | gpio_a_alt_in[1][1]);
+
+    assign timer0_in[0] = gpio_a_alt_in[0][2];
+    assign timer0_in[1] = gpio_a_alt_in[1][2];
+    assign timer0_in[2] = gpio_a_alt_in[2][2];
+    assign timer0_in[3] = gpio_a_alt_in[3][2];
+    assign timer0_in[4] = gpio_a_alt_in[4][2];
+    assign timer0_in[5] = gpio_a_alt_in[5][2];
+    assign timer0_in[6] = gpio_a_alt_in[6][2];
+    assign timer0_in[7] = gpio_a_alt_in[7][2];
 
 
 
