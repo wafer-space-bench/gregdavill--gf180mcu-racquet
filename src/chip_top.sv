@@ -121,6 +121,14 @@ module chip_top #(
     end
     endgenerate
 
+    // Reset syncroniser
+    logic rst_sync0;
+    logic rst_sync1;
+    always_ff @(posedge clk_PAD2CORE) begin
+        rst_sync1 <= rst_sync0;
+        rst_sync0 <= rst_n_PAD2CORE;
+    end
+
     // Core design
 
     chip_core #(
@@ -132,7 +140,7 @@ module chip_top #(
         `endif
     
         .clk        (clk_PAD2CORE),
-        .rst_n      (rst_n_PAD2CORE),
+        .rst_n      (rst_sync1),
 
         .bidir_in   (bidir_PAD2CORE),
         .bidir_out  (bidir_CORE2PAD),
