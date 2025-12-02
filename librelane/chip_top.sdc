@@ -46,9 +46,12 @@ set clk_core_inout_ports [get_ports {
     bidir_PAD[*]
 }] 
 
-set_input_delay -min 0 -clock $clocks $clk_core_inout_ports
+# Timing of GPIO compared to input CLK is non-critical in this application
+# But still ensure that some bounds are placed on input/output delay
+set_input_delay -min $input_delay_value -clock $clocks $clk_core_inout_ports
 set_input_delay -max $input_delay_value -clock $clocks $clk_core_inout_ports
-set_output_delay $output_delay_value -clock $clocks $clk_core_inout_ports
+set_output_delay -min $output_delay_value -clock $clocks $clk_core_inout_ports
+set_output_delay -max $output_delay_value -clock $clocks $clk_core_inout_ports
 
 # Input-only pads
 set clk_core_input_ports [get_ports { 
