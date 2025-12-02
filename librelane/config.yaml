@@ -220,7 +220,7 @@ MACROS:
         - dir::../ip/gf180mcu_gsd__logo/lib/gf180mcu_gsd__logo.lib
     instances:
       gsd_logo:
-        location: [26, "expr::$DIE_AREA[3] + -87.5"]
+        location: [26, "expr::$DIE_AREA[3] + -188"]
         orientation: N
 
   gf180mcu_fd_ip_sram__sram512x8m8wm1:
