@@ -2,7 +2,7 @@
 <report-database>
  <description>DRC Run Report at</description>
  <original-file/>
- <generator>drc: script='/Users/greg/projects/wafer-space/gf180mcu-project-template-serv/ip/gf180mcu_gsd__logo/../../gf180mcu/gf180mcuD/libs.tech/klayout/tech/drc/gf180mcu.drc'</generator>
+ <generator>drc: script='/wafer.space/gf180mcu-racquet-1p0/ip/gf180mcu_gsd__logo/../../gf180mcu/gf180mcuD/libs.tech/klayout/tech/drc/gf180mcu.drc'</generator>
  <top-cell>gf180mcu_gsd__logo</top-cell>
  <tags>
  </tags>
@@ -458,101 +458,5 @@
   </cell>
  </cells>
  <items>
-  <item>
-   <tags/>
-   <category>'MT.1'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (70.81,95.25;71.25,95.25)|(71.69,95.25;71.25,95.25)</value>
-   </values>
-  </item>
-  <item>
-   <tags/>
-   <category>'MT.1'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (71.25,95.25;71.25,94.81)|(71.25,95.25;71.25,95.69)</value>
-   </values>
-  </item>
-  <item>
-   <tags/>
-   <category>'MT.1'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (75.75,96.31;75.75,96.75)|(75.75,97.19;75.75,96.75)</value>
-   </values>
-  </item>
-  <item>
-   <tags/>
-   <category>'MT.1'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (75.75,96.75;75.31,96.75)|(75.75,96.75;76.19,96.75)</value>
-   </values>
-  </item>
-  <item>
-   <tags/>
-   <category>'MT.2a'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (70.79,95.25;71.25,95.25)|(71.71,95.25;71.25,95.25)</value>
-   </values>
-  </item>
-  <item>
-   <tags/>
-   <category>'MT.2a'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (75.75,96.29;75.75,96.75)|(75.75,97.21;75.75,96.75)</value>
-   </values>
-  </item>
-  <item>
-   <tags/>
-   <category>'MT.2a'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (71.25,95.25;71.25,94.79)|(71.25,95.25;71.25,95.71)</value>
-   </values>
-  </item>
-  <item>
-   <tags/>
-   <category>'MT.2a'</category>
-   <cell>gf180mcu_gsd__logo</cell>
-   <visited>false</visited>
-   <multiplicity>1</multiplicity>
-   <comment/>
-   <image/>
-   <values>
-    <value>edge-pair: (75.75,96.75;75.29,96.75)|(75.75,96.75;76.21,96.75)</value>
-   </values>
-  </item>
  </items>
 </report-database>
