@@ -108,7 +108,8 @@ module wb_gpio #(
                     1: {_out, _dir, _alt1_in} = {_alt1_out, _alt1_dir, _reg_in};
                     2: {_out, _dir, _alt2_in} = {_alt2_out, _alt2_dir, _reg_in};
                     3: {_out, _dir, _alt3_in} = {_alt3_out, _alt3_dir, _reg_in};
-                    default: begin end
+                    default: begin
+                    end
                 endcase
             end
 
@@ -123,49 +124,49 @@ module wb_gpio #(
     // WB port
     always_ff @(posedge clk_i or negedge rst_n) begin
         if (!rst_n) begin
-            dat_o <= 32'd0;
             ack_o <= 1'b0;
         end else begin
             if (wb_active) begin
                 ack_o <= 1'b1;  // Accept reads/writes on entire register space.
-
-                // dat_o logic
-                if (!we_i) begin
-                    casex (adr_i[11:2])
-                        OUT_DAT: dat_o <= reg_out;
-                        OUT_SET: dat_o <= reg_out;
-                        OUT_CLR: dat_o <= reg_out;
-                        OUT_TOG: dat_o <= reg_out;
-
-                        DIR_DAT: dat_o <= reg_dir;
-                        DIR_SET: dat_o <= reg_dir;
-                        DIR_CLR: dat_o <= reg_dir;
-                        DIR_TOG: dat_o <= reg_dir;
-
-                        PU_DAT: dat_o <= reg_pu;
-                        PU_SET: dat_o <= reg_pu;
-                        PU_CLR: dat_o <= reg_pu;
-                        PU_TOG: dat_o <= reg_pu;
-
-                        PD_DAT: dat_o <= reg_pd;
-                        PD_SET: dat_o <= reg_pd;
-                        PD_CLR: dat_o <= reg_pd;
-                        PD_TOG: dat_o <= reg_pd;
-
-                        IN_DAT: dat_o <= reg_in;
-
-                        SLEW:   dat_o <= reg_slew;
-                        SCHMIT: dat_o <= reg_schmit;
-
-                        10'b001xxxxxxx: dat_o <= {30'd0, reg_alt[adr_i[7:2]]};
-                        default: begin
-                        end
-                    endcase
-                end
             end else begin
                 ack_o <= 1'b0;
             end
         end
+    end
+
+    // dat_o logic
+    wire [9:0] reg_adr = adr_i[11:2];
+    wire [5:0] alt_idx = adr_i[7:2];
+    always_comb begin
+        casex (reg_adr)
+            OUT_DAT: dat_o = reg_out;
+            OUT_SET: dat_o = reg_out;
+            OUT_CLR: dat_o = reg_out;
+            OUT_TOG: dat_o = reg_out;
+
+            DIR_DAT: dat_o = reg_dir;
+            DIR_SET: dat_o = reg_dir;
+            DIR_CLR: dat_o = reg_dir;
+            DIR_TOG: dat_o = reg_dir;
+
+            PU_DAT: dat_o = reg_pu;
+            PU_SET: dat_o = reg_pu;
+            PU_CLR: dat_o = reg_pu;
+            PU_TOG: dat_o = reg_pu;
+
+            PD_DAT: dat_o = reg_pd;
+            PD_SET: dat_o = reg_pd;
+            PD_CLR: dat_o = reg_pd;
+            PD_TOG: dat_o = reg_pd;
+
+            IN_DAT: dat_o = reg_in;
+
+            SLEW:   dat_o = reg_slew;
+            SCHMIT: dat_o = reg_schmit;
+
+            10'b001xxxxxxx: dat_o = {30'd0, reg_alt[alt_idx]};
+            default: dat_o = 32'd0;
+        endcase
     end
 
     // reg_in logic

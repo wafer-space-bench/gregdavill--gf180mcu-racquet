@@ -55,15 +55,12 @@ module wb_queue (
             if (wr_active) begin
                 if (wr_we_i) begin
                     for (int i = 0; i < NUM_QUEUES; i = i + 1)
-                    if (wr_adr_i[11:2] == 10'(QUEUE0 + i))
-                        wr_ack_o <= !reg_queue_valid[i];
+                    if (wr_adr_i[11:2] == 10'(QUEUE0 + i)) wr_ack_o <= !reg_queue_valid[i];
 
                     for (int i = 0; i < NUM_NBLK_QUEUES; i = i + 1)
-                    if (wr_adr_i[11:2] == 10'(NBLK_QUEUE0 + i))
-                        wr_ack_o <= 1'b1;
+                    if (wr_adr_i[11:2] == 10'(NBLK_QUEUE0 + i)) wr_ack_o <= 1'b1;
 
-                    for (int i = 0; i < NUM_FLAGS; i = i + 1)
-                    if (wr_adr_i[11:2] == 10'(FLAG0 + i)) wr_ack_o <= 1'b1;
+                    for (int i = 0; i < NUM_FLAGS; i = i + 1) if (wr_adr_i[11:2] == 10'(FLAG0 + i)) wr_ack_o <= 1'b1;
 
                 end else begin
                     // Write only port
@@ -87,8 +84,7 @@ module wb_queue (
                         if (wr_adr_i[11:2] == 10'(QUEUE0 + j)) begin
                             if (!reg_queue_valid[j]) begin
                                 for (int b = 0; b < 4; b++) begin
-                                    if (wr_sel_i[b])
-                                        reg_queue[j][b*8+:8] <= wr_dat_i[b*8+:8];
+                                    if (wr_sel_i[b]) reg_queue[j][b*8+:8] <= wr_dat_i[b*8+:8];
                                 end
                                 reg_queue_valid[j] <= 1'b1;
                             end
@@ -111,8 +107,7 @@ module wb_queue (
                     if (wr_active && wr_we_i) begin
                         if (wr_adr_i[11:2] == 10'(NBLK_QUEUE0 + j)) begin
                             for (int b = 0; b < 4; b++) begin
-                                if (wr_sel_i[b])
-                                    reg_nblk_queue[j][b*8+:8] <= wr_dat_i[b*8+:8];
+                                if (wr_sel_i[b]) reg_nblk_queue[j][b*8+:8] <= wr_dat_i[b*8+:8];
                             end
                             reg_nblk_queue_valid[j] <= 1'b1;
                         end
@@ -143,25 +138,43 @@ module wb_queue (
                 end else begin
                     for (int i = 0; i < NUM_QUEUES; i = i + 1) begin
                         if (rd_adr_i[11:2] == 10'(QUEUE0 + i)) begin
-                            rd_dat_o <= reg_queue[i];
                             rd_ack_o <= reg_queue_valid[i];
                         end
                     end
                     for (int i = 0; i < NUM_NBLK_QUEUES; i = i + 1) begin
                         if (rd_adr_i[11:2] == 10'(NBLK_QUEUE0 + i)) begin
-                            rd_dat_o <= reg_nblk_queue[i];
                             rd_ack_o <= reg_nblk_queue_valid[i];
                         end
                     end
                     for (int i = 0; i < NUM_FLAGS; i = i + 1) begin
                         if (rd_adr_i[11:2] == 10'(FLAG0 + i)) begin
-                            rd_dat_o <= wr_dat_i[i];
                             rd_ack_o <= flags[i];
                         end
                     end
                 end
             end else begin
                 rd_ack_o <= 1'b0;
+            end
+        end
+    end
+
+    // dat_o logic
+    wire [9:0] reg_adr = rd_adr_i[11:2];
+    always_comb begin
+        rd_dat_o = 32'd0;
+        for (int i = 0; i < NUM_QUEUES; i = i + 1) begin
+            if (reg_adr == 10'(QUEUE0 + i)) begin
+                rd_dat_o = reg_queue[i];
+            end
+        end
+        for (int i = 0; i < NUM_NBLK_QUEUES; i = i + 1) begin
+            if (reg_adr == 10'(NBLK_QUEUE0 + i)) begin
+                rd_dat_o = reg_nblk_queue[i];
+            end
+        end
+        for (int i = 0; i < NUM_FLAGS; i = i + 1) begin
+            if (reg_adr == 10'(FLAG0 + i)) begin
+                rd_dat_o = wr_dat_i;
             end
         end
     end

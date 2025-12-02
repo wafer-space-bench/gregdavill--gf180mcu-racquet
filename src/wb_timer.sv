@@ -170,7 +170,6 @@ module wb_timer #(
     // WB port
     always_ff @(posedge clk_i or negedge rst_n) begin
         if (!rst_n) begin
-            dat_o <= 32'd0;
             ack_o <= 1'b0;
 
             for (int i = 0; i < TIMER_NUM; i++) begin
@@ -231,51 +230,16 @@ module wb_timer #(
                         end
                     end
                 end else begin
-                    if (adr_i[11:2] == STATUS) begin
-                        dat_o <= {{(16 - TIMER_NUM) {1'b0}}, timer_running, {(16 - TIMER_CMP) {1'b0}}, cmp_output};
-                    end
-
-                    for (int i = 0; i < TIMER_NUM; i++) begin
-                        if (adr_i[11:2] == (TIMER0_CTRL0 + 10'(i * 'h10))) begin
-                            dat_o <= reg_timer_ctrl0[i];
-                        end
-                        if (adr_i[11:2] == (TIMER0_CTRL1 + 10'(i * 'h10))) begin
-                            dat_o <= reg_timer_ctrl1[i];
-                        end
-                        if (adr_i[11:2] == (TIMER0_VALUE + 10'(i * 'h10))) begin
-                            dat_o <= timer_value[i];
-                        end
-                    end
                     for (int i = 0; i < TIMER_CMP; i++) begin
-                        if (adr_i[11:2] == (CMP0_CTRL + 10'(i * 'h10))) begin
-                            dat_o <= reg_cmp_ctrl[i];
-                        end
-                        if (adr_i[11:2] == (CMP0_VALUE + 10'(i * 'h10))) begin
-                            dat_o <= reg_cmp_value[i];
-                        end
                         if (adr_i[11:2] == (CMP0_HCF + 10'(i * 'h10))) begin
                             ack_o <= cmp_output[i];
-                            dat_o <= '0;
-                        end
-                    end
-                    for (int i = 0; i < TIMER_OUTPUTS; i++) begin
-                        if (adr_i[11:2] == (OUT0_CTRL + 10'(i * 'h10))) begin
-                            dat_o <= reg_out_ctrl[i];
                         end
                     end
                     for (int i = 0; i < TIMER_INPUTS; i++) begin
-                        if (adr_i[11:2] == (IN0_CTRL + 10'(i * 'h10))) begin
-                            dat_o <= {24'd0, reg_in_ctrl[i]};
-                        end
-                        if (adr_i[11:2] == (IN0_VALUE + 10'(i * 'h10))) begin
-                            dat_o <= {31'd0, timer_in_src[i]};
-                        end
                         if (adr_i[11:2] == (IN0_HCF + 10'(i * 'h10))) begin
                             ack_o <= timer_in_src[i];
-                            dat_o <= {31'd0, timer_in_src[i]};
                         end
                     end
-
                 end
             end else begin
                 ack_o <= 1'b0;
@@ -283,6 +247,50 @@ module wb_timer #(
         end
     end
 
+    // dat_o logic
+    wire [9:0] reg_adr = adr_i[11:2];
+    always_comb begin
+        dat_o = 32'd0;
+        if (reg_adr == STATUS) begin
+            dat_o = {{(16 - TIMER_NUM) {1'b0}}, timer_running, {(16 - TIMER_CMP) {1'b0}}, cmp_output};
+        end
+
+        for (int i = 0; i < TIMER_NUM; i++) begin
+            if (reg_adr == (TIMER0_CTRL0 + 10'(i * 'h10))) begin
+                dat_o = reg_timer_ctrl0[i];
+            end
+            if (reg_adr == (TIMER0_CTRL1 + 10'(i * 'h10))) begin
+                dat_o = reg_timer_ctrl1[i];
+            end
+            if (reg_adr == (TIMER0_VALUE + 10'(i * 'h10))) begin
+                dat_o = {{(32 - TIMER_WIDTH){1'b0}},timer_value[i]};
+            end
+        end
+        for (int i = 0; i < TIMER_CMP; i++) begin
+            if (reg_adr == (CMP0_CTRL + 10'(i * 'h10))) begin
+                dat_o = reg_cmp_ctrl[i];
+            end
+            if (reg_adr == (CMP0_VALUE + 10'(i * 'h10))) begin
+                dat_o = reg_cmp_value[i];
+            end
+        end
+        for (int i = 0; i < TIMER_OUTPUTS; i++) begin
+            if (reg_adr == (OUT0_CTRL + 10'(i * 'h10))) begin
+                dat_o = reg_out_ctrl[i];
+            end
+        end
+        for (int i = 0; i < TIMER_INPUTS; i++) begin
+            if (reg_adr == (IN0_CTRL + 10'(i * 'h10))) begin
+                dat_o = {24'd0, reg_in_ctrl[i]};
+            end
+            if (reg_adr == (IN0_VALUE + 10'(i * 'h10))) begin
+                dat_o = {31'd0, timer_in_src[i]};
+            end
+            if (reg_adr == (IN0_HCF + 10'(i * 'h10))) begin
+                dat_o = {31'd0, timer_in_src[i]};
+            end
+        end
+    end
 endmodule
 
 
