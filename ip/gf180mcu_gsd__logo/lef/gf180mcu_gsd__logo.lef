@@ -6,10 +6,12 @@ MACRO gf180mcu_gsd__logo
   CLASS BLOCK ;
   FOREIGN gf180mcu_gsd__logo ;
   ORIGIN 0.000 0.000 ;
-  SIZE 170.25 BY 61.5 ;
+  SIZE 190.5 BY 162 ;
   OBS
       LAYER Metal5 ;
-        RECT 0.0 0.0 170.25 61.5 ;
+        RECT 0.0 0.0 97.8 100 ;
+        RECT 0.0 100 140 124 ;
+        RECT 0.0 124 190.5 162 ;
   END
 END gf180mcu_gsd__logo
 END LIBRARY
