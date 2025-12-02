@@ -1,4 +1,5 @@
 module wb_timer #(
+    parameter int TIMER_WIDTH = 32,
     parameter int TIMER_NUM = 4,
     parameter int TIMER_CMP = 4,
     parameter int TIMER_OUTPUTS = 4,
@@ -19,7 +20,7 @@ module wb_timer #(
     output logic        ack_o,
 
     output logic [TIMER_OUTPUTS-1:0] timer_out,
-    input logic [TIMER_OUTPUTS-1:0] timer_in
+    input  logic [TIMER_OUTPUTS-1:0] timer_in
 );
     // Register address map, word addresses
     localparam logic [9:0] CTRL = 10'h0;
@@ -44,14 +45,14 @@ module wb_timer #(
     logic [31:0] reg_timer_ctrl0[TIMER_NUM];
     logic [31:0] reg_timer_ctrl1[TIMER_NUM];
 
-    logic [31:0] reg_cmp_value[TIMER_CMP];
-    logic [31:0] reg_cmp_ctrl[TIMER_CMP];
+    logic [TIMER_WIDTH-1:0] reg_cmp_value[TIMER_CMP];
+    logic [TIMER_WIDTH-1:0] reg_cmp_ctrl[TIMER_CMP];
 
     logic [15:0] reg_out_ctrl[TIMER_OUTPUTS];
     logic [15:0] reg_in_ctrl[TIMER_INPUTS];
 
+    logic [TIMER_WIDTH-1:0] timer_value[TIMER_NUM];
 
-    logic [31:0] timer_value[TIMER_NUM];
     logic [TIMER_NUM-1:0] timer_running;
     logic [TIMER_CMP-1:0] cmp_output;
     logic [TIMER_INPUTS-1:0] timer_in_src;
@@ -60,7 +61,7 @@ module wb_timer #(
     genvar j;
     generate
         for (j = 0; j < TIMER_OUTPUTS; j = j + 1) begin : gen_outputs
-            wire [ 3:0] cmp_inputs = cmp_output[3:0];
+            wire [TIMER_CMP-1:0] cmp_inputs = cmp_output[TIMER_CMP-1:0];
             wire [15:0] reg_masked = (reg_out_ctrl[j] & (1 << cmp_inputs));
 
             always_ff @(posedge clk_i or negedge rst_n) begin
@@ -90,15 +91,13 @@ module wb_timer #(
             wire in_sync2 = in_sync[2];
             wire in_sync1 = in_sync[1];
             logic src;
-            wire [7:0] reg_in_ctrl_mode = reg_in_ctrl[j][7:0];
+            wire [1:0] reg_in_ctrl_mode = reg_in_ctrl[j][1:0];
             always_comb begin
                 case (reg_in_ctrl_mode)
-                    0: src = 1'b0;
-                    1: src = 1'b1;
-                    2: src = in_sync2;  // sync'd input
-                    3: src = ~in_sync2;  // invert sync'd input
-                    4: src = in_sync2 && ~in_sync1;  // Falling Edge
-                    5: src = ~in_sync2 && in_sync1;  // Rising Edge
+                    2'b00: src = in_sync2;  // sync'd input
+                    2'b01: src = ~in_sync2;  // invert sync'd input
+                    2'b10: src = in_sync2 && ~in_sync1;  // Falling Edge
+                    2'b11: src = ~in_sync2 && in_sync1;  // Rising Edge
                     default: src = 1'b0;
                 endcase
             end
@@ -127,7 +126,9 @@ module wb_timer #(
                 || |{cmp_output & reg_timer_ctrl0[j][24+:TIMER_CMP]} 
                 || |{timer_in_src & reg_timer_ctrl1[j][24+:TIMER_INPUTS]};
 
-            timer u_timer (
+            counter #(
+                .WIDTH(TIMER_WIDTH)
+            ) u_cnt (
                 .clk_i(clk_i),
                 .rst_n(reg_timer_ctrl0[j][0]),
 
@@ -143,19 +144,21 @@ module wb_timer #(
 
     generate
         for (j = 0; j < TIMER_CMP; j = j + 1) begin : gen_cmp
-            logic [31:0] sel_timer;
-            wire  [ 7:0] timer_ch_sel = reg_cmp_ctrl[j][15:8];
+            logic [TIMER_WIDTH-1:0] cmp_timer_val;
+            wire  [ 2:0] timer_ch_sel = reg_cmp_ctrl[j][10:8]; // 8 timers max
             always_comb begin
-                sel_timer = 0;
+                cmp_timer_val = {TIMER_WIDTH{'0}};
                 for (int i = 0; i < TIMER_NUM; i = i + 1) begin
-                    if (timer_ch_sel == i) sel_timer = timer_value[i];
+                    if (timer_ch_sel == i) cmp_timer_val = timer_value[i];
                 end
             end
 
-            cmp u_cmp (
-                .timer_i    (sel_timer),
+            cmp #(
+                .WIDTH(TIMER_WIDTH)
+            ) u_cmp (
+                .timer_i    (cmp_timer_val),
                 .cmp_value_i(reg_cmp_value[j]),
-                .cmp_mode_i (reg_cmp_ctrl[j][7:0]),
+                .cmp_mode_i (reg_cmp_ctrl[j][1:0]),
 
                 .cmp_o(cmp_output[j])
             );
@@ -283,7 +286,9 @@ module wb_timer #(
 endmodule
 
 
-module timer (
+module counter #(
+    parameter integer WIDTH = 32
+) (
     input logic clk_i,
     input logic rst_n,
 
@@ -292,10 +297,10 @@ module timer (
     input logic reset_i,
 
     output logic running_o,
-    output logic [31:0] timer_o
+    output logic [WIDTH-1:0] timer_o
 );
 
-    logic [31:0] counter;
+    logic [WIDTH-1:0] counter;
     logic running;
 
     assign timer_o   = counter;
@@ -303,34 +308,34 @@ module timer (
 
     always_ff @(posedge clk_i or negedge rst_n) begin
         if (!rst_n) begin
-            counter <= 32'd0;
+            counter <= {WIDTH{'0}};
             running <= 1'b0;
         end else begin
             if (start_i) running <= 1'b1;
             else if (stop_i) running <= 1'b0;
 
-            if (reset_i) counter <= 32'd0;
-            else if (running) counter <= counter + 32'd1;
+            if (reset_i) counter <= {WIDTH{'0}};
+            else if (running) counter <= counter + {{WIDTH{'0}}, 1'b1};
         end
     end
 endmodule
 
 
-module cmp (
-    input logic [31:0] timer_i,
-    input logic [31:0] cmp_value_i,
-    input logic [ 7:0] cmp_mode_i,
+module cmp #(
+    parameter integer WIDTH = 32
+) (
+    input logic [WIDTH-1:0] timer_i,
+    input logic [WIDTH-1:0] cmp_value_i,
+    input logic [ 1:0] cmp_mode_i,
 
     output logic cmp_o
 );
     always_comb begin
         case (cmp_mode_i)
-            0: cmp_o = 1'b0;
-            1: cmp_o = 1'b1;
-            2: cmp_o = (timer_i == cmp_value_i);
-            3: cmp_o = (timer_i != cmp_value_i);
-            4: cmp_o = (timer_i <= cmp_value_i);
-            5: cmp_o = (timer_i >= cmp_value_i);
+            2'b00: cmp_o = timer_i == cmp_value_i;
+            2'b01: cmp_o = timer_i != cmp_value_i;
+            2'b10: cmp_o = timer_i <= cmp_value_i;
+            2'b11: cmp_o = timer_i >= cmp_value_i;
             default: cmp_o = 1'b0;
         endcase
     end
