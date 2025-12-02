@@ -104,7 +104,7 @@ RUN_POST_GRT_DESIGN_REPAIR: True
 
 # Increase for more logic
 # on your die
-PL_TARGET_DENSITY_PCT: 28
+PL_TARGET_DENSITY_PCT: 65
 GRT_ALLOW_CONGESTION: True
 
 # Fix antenna violations after DRT
