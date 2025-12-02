@@ -63,12 +63,12 @@ module wb_uart (
     // WB port
     always_ff @(posedge clk_i or negedge rst_n) begin
         if (!rst_n) begin
-            dat_o    <= 32'd0;
             ack_o <= 1'b0;
             reg_divisor <= 16'd0;
             reg_ctrl <= 2'd0;
         end else begin
             if (wb_active) begin
+                ack_o <= 1'b1;
                 if (we_i) begin
                     if (adr_i[11:2] == DATA) begin
                         ack_o <= (tx_valid & tx_ready);
@@ -78,7 +78,6 @@ module wb_uart (
                         for (int b = 0; b < 2; b++) begin  // 16b register
                             if (sel_i[b]) reg_divisor[b*8+:8] <= dat_i[b*8+:8];
                         end
-                        ack_o <= 1'b1;
                     end
 
                     if (adr_i[11:2] == CTRL) begin
@@ -86,36 +85,35 @@ module wb_uart (
                             reg_ctrl[0] <= dat_i[0];  // tx_en
                             reg_ctrl[1] <= dat_i[1];  // rx_en
                         end
-                        ack_o <= 1'b1;
                     end
-
-                    if (adr_i[11:2] == STATUS) begin
-                        ack_o <= 1'b1;
-                    end
-
                 end else begin
                     // Read ACK generation
                     if (adr_i[11:2] == DATA) begin
-                        dat_o <= rx_data;
                         ack_o <= (rx_valid & rx_ready);
-                    end
-                    if (adr_i[11:2] == DIV) begin
-                        dat_o <= {16'd0, reg_divisor};
-                        ack_o <= 1'b1;
-                    end
-                    if (adr_i[11:2] == CTRL) begin
-                        dat_o <= {30'd0, reg_ctrl[1], reg_ctrl[0]};
-                        ack_o <= 1'b1;
-                    end
-                    if (adr_i[11:2] == STATUS) begin
-                        dat_o <= {16'd0, 7'd0, rx_valid, 7'd0, tx_ready};
-                        ack_o <= 1'b1;
                     end
                 end
             end else begin
                 ack_o <= 1'b0;
             end
         end
+    end
+
+
+    // dat_o logic
+    wire [ 9:0] reg_adr = adr_i[11:2];
+    // workaround for iverilog, constant bitselects not supported in always_*
+    wire [31:0] div_val = {16'd0, reg_divisor};
+    wire [31:0] ctrl_val = {30'd0, reg_ctrl[1], reg_ctrl[0]};
+    wire [31:0] status_val = {16'd0, 7'd0, rx_valid, 7'd0, tx_ready};
+    always_comb begin
+        dat_o = 32'd0;
+        case (reg_adr)
+            DATA: dat_o = rx_data;
+            DIV: dat_o = div_val;
+            CTRL: dat_o = ctrl_val;
+            STATUS: dat_o = status_val;
+            default: dat_o = 32'd0;
+        endcase
     end
 
     assign tx_valid = (wb_active) && (we_i) && (adr_i[11:2] == DATA);
@@ -140,8 +138,8 @@ module uart_tx (
     output logic tx_o
 );
 
-    logic [9:0] tx_shift;   // [0] => next bit out; contains start(0), data[7:0], stop(1)
-    logic [3:0] tx_bits;  // number of bits remaining (0..10)
+    logic [ 9:0] tx_shift;  // [0] => next bit out; contains start(0), data[7:0], stop(1)
+    logic [ 3:0] tx_bits;  // number of bits remaining (0..10)
     logic [15:0] tx_tick;
 
     // Idle when no bits left
@@ -165,11 +163,9 @@ module uart_tx (
             // start a frame when requested and ready
             if (valid_i && ready_o) begin
                 // frame: start bit (0), data LSB first, stop bit (1)
-                tx_shift <= {
-                    1'b1, data_i, 1'b0
-                };  // MSB first in vector, but we'll shift right
-                tx_bits <= 4'd10;
-                tx_tick <= 16'd0;
+                tx_shift <= {1'b1, data_i, 1'b0};  // MSB first in vector, but we'll shift right
+                tx_bits  <= 4'd10;
+                tx_tick  <= 16'd0;
             end else if (tx_bits != 0) begin
                 if (tx_tick >= divisor_i) begin
                     tx_tick  <= 16'd0;
