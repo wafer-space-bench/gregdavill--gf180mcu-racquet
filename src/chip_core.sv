@@ -54,15 +54,20 @@ module chip_core #(
     logic [GPIOB_NUM-1:0] gpio_b_pu;
     logic [GPIOB_NUM-1:0] gpio_b_pd;
 
-    localparam integer NUM_PROC_CORES = 24;
-    localparam integer NUM_WB_RESPONDERS = 6;
+    localparam integer NUM_PROC_CORES = 10;
+    localparam integer NUM_WB_RESPONDERS = 11;
 
     localparam integer GPIOA_IDX = 0;
     localparam integer GPIOB_IDX = 1;
     localparam integer QUEUE0_WR_IDX = 2;
     localparam integer QUEUE0_RD_IDX = 3;
     localparam integer UART0_IDX = 4;
-    localparam integer TIMER0_IDX = 5;
+    localparam integer UART1_IDX = 5;
+    localparam integer UART2_IDX = 6;
+    localparam integer TIMER0_IDX = 7;
+    localparam integer TIMER1_IDX = 8;
+    localparam integer TIMER2_IDX = 9;
+    localparam integer TIMER3_IDX = 10;
     genvar i;
 
     // Controller WB busses
@@ -298,6 +303,46 @@ module chip_core #(
     );
     assign wb_resp_err[UART0_IDX] = '0;
 
+    logic uart1_tx, uart1_rx;
+    wb_uart u_uart1 (
+        .clk_i(clk),
+        .rst_n(rst_n),
+
+        .adr_i(wb_resp_adr[UART1_IDX]),
+        .dat_i(wb_resp_wdt[UART1_IDX]),
+        .dat_o(wb_resp_rdt[UART1_IDX]),
+        .sel_i(wb_resp_sel[UART1_IDX]),
+        .we_i (wb_resp_we[UART1_IDX]),
+        .stb_i(wb_resp_stb[UART1_IDX]),
+        .cyc_i(wb_resp_cyc[UART1_IDX]),
+        .ack_o(wb_resp_ack[UART1_IDX]),
+
+        // UART pins
+        .tx_o(uart1_tx),
+        .rx_i(uart1_rx)
+    );
+    assign wb_resp_err[UART1_IDX] = '0;
+
+    logic uart2_tx, uart2_rx;
+    wb_uart u_uart2 (
+        .clk_i(clk),
+        .rst_n(rst_n),
+
+        .adr_i(wb_resp_adr[UART2_IDX]),
+        .dat_i(wb_resp_wdt[UART2_IDX]),
+        .dat_o(wb_resp_rdt[UART2_IDX]),
+        .sel_i(wb_resp_sel[UART2_IDX]),
+        .we_i (wb_resp_we[UART2_IDX]),
+        .stb_i(wb_resp_stb[UART2_IDX]),
+        .cyc_i(wb_resp_cyc[UART2_IDX]),
+        .ack_o(wb_resp_ack[UART2_IDX]),
+
+        // UART pins
+        .tx_o(uart2_tx),
+        .rx_i(uart2_rx)
+    );
+    assign wb_resp_err[UART2_IDX] = '0;
+
     logic [7:0] timer0_out;
     logic [7:0] timer0_in;
     wb_timer #(
@@ -322,6 +367,83 @@ module chip_core #(
         .timer_in(timer0_in)
     );
     assign wb_resp_err[TIMER0_IDX] = '0;  // not used by peripheral
+
+
+    logic [7:0] timer1_out;
+    logic [7:0] timer1_in;
+    wb_timer #(
+        .TIMER_NUM(4),
+        .TIMER_CMP(2),
+        .TIMER_OUTPUTS(8),
+        .TIMER_INPUTS(8)
+    ) u_timer1 (
+        .clk_i(clk),
+        .rst_n(rst_n),
+
+        .adr_i(wb_resp_adr[TIMER1_IDX]),
+        .dat_i(wb_resp_wdt[TIMER1_IDX]),
+        .dat_o(wb_resp_rdt[TIMER1_IDX]),
+        .sel_i(wb_resp_sel[TIMER1_IDX]),
+        .we_i (wb_resp_we[TIMER1_IDX]),
+        .stb_i(wb_resp_stb[TIMER1_IDX]),
+        .cyc_i(wb_resp_cyc[TIMER1_IDX]),
+        .ack_o(wb_resp_ack[TIMER1_IDX]),
+
+        .timer_out(timer1_out),
+        .timer_in(timer1_in)
+    );
+    assign wb_resp_err[TIMER1_IDX] = '0;  // not used by peripheral
+
+    logic [7:0] timer2_out;
+    logic [7:0] timer2_in;
+    wb_timer #(
+        .TIMER_NUM(2),
+        .TIMER_CMP(2),
+        .TIMER_OUTPUTS(8),
+        .TIMER_INPUTS(8)
+    ) u_timer2 (
+        .clk_i(clk),
+        .rst_n(rst_n),
+
+        .adr_i(wb_resp_adr[TIMER2_IDX]),
+        .dat_i(wb_resp_wdt[TIMER2_IDX]),
+        .dat_o(wb_resp_rdt[TIMER2_IDX]),
+        .sel_i(wb_resp_sel[TIMER2_IDX]),
+        .we_i (wb_resp_we[TIMER2_IDX]),
+        .stb_i(wb_resp_stb[TIMER2_IDX]),
+        .cyc_i(wb_resp_cyc[TIMER2_IDX]),
+        .ack_o(wb_resp_ack[TIMER2_IDX]),
+
+        .timer_out(timer2_out),
+        .timer_in(timer2_in)
+    );
+    assign wb_resp_err[TIMER2_IDX] = '0;  // not used by peripheral
+
+    logic [7:0] timer3_out;
+    logic [7:0] timer3_in;
+    wb_timer #(
+        .TIMER_NUM(2),
+        .TIMER_CMP(2),
+        .TIMER_OUTPUTS(8),
+        .TIMER_INPUTS(8),
+        .TIMER_WIDTH(16)
+    ) u_timer3 (
+        .clk_i(clk),
+        .rst_n(rst_n),
+
+        .adr_i(wb_resp_adr[TIMER3_IDX]),
+        .dat_i(wb_resp_wdt[TIMER3_IDX]),
+        .dat_o(wb_resp_rdt[TIMER3_IDX]),
+        .sel_i(wb_resp_sel[TIMER3_IDX]),
+        .we_i (wb_resp_we[TIMER3_IDX]),
+        .stb_i(wb_resp_stb[TIMER3_IDX]),
+        .cyc_i(wb_resp_cyc[TIMER3_IDX]),
+        .ack_o(wb_resp_ack[TIMER3_IDX]),
+
+        .timer_out(timer3_out),
+        .timer_in(timer3_in)
+    );
+    assign wb_resp_err[TIMER3_IDX] = '0;  // not used by peripheral
 
 
     // See here for usage: https://gf180mcu-pdk.readthedocs.io/en/latest/IPs/IO/gf180mcu_fd_io/digital.html
@@ -370,8 +492,82 @@ module chip_core #(
     
     assign gpio_a_alt_out[7] = {timer0_out[7], 1'b0, 1'b0, 1'b0};
     assign gpio_a_alt_dir[7] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[8] = {timer1_out[0], 1'b0, uart1_tx, 1'b0};
+    assign gpio_a_alt_dir[8] = {1'b1, 1'b0, 1'b1, 1'b0};
+
+    assign gpio_a_alt_out[9] = {timer1_out[1], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[9] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[10] = {timer1_out[2], 1'b0, uart1_tx, 1'b0};
+    assign gpio_a_alt_dir[10] = {1'b1, 1'b0, 1'b1, 1'b0};
+
+    assign gpio_a_alt_out[11] = {timer1_out[3], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[11] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[12] = {timer1_out[4], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[12] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[13] = {timer1_out[5], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[13] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[14] = {timer1_out[6], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[14] = {1'b1, 1'b0, 1'b0, 1'b0};
     
+    assign gpio_a_alt_out[15] = {timer1_out[7], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[15] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[16] = {timer2_out[0], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[16] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[17] = {timer2_out[1], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[17] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[18] = {timer2_out[2], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[18] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[19] = {timer2_out[3], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[19] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[20] = {timer2_out[4], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[20] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[21] = {timer2_out[5], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[21] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[22] = {timer2_out[6], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[22] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[23] = {timer2_out[7], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[23] = {1'b1, 1'b0, 1'b0, 1'b0};
+
+    assign gpio_a_alt_out[24] = {timer3_out[0], 1'b0, uart2_tx, 1'b0};
+    assign gpio_a_alt_dir[24] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[25] = {timer3_out[1], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[25] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[26] = {timer3_out[2], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[26] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[27] = {timer3_out[3], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[27] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[28] = {timer3_out[4], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[28] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[29] = {timer3_out[5], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[29] = {1'b1, 1'b0, 1'b0, 1'b0};
+    
+    assign gpio_a_alt_out[30] = {timer3_out[6], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[30] = {1'b1, 1'b0, 1'b1, 1'b0};
+    
+    assign gpio_a_alt_out[31] = {timer3_out[7], 1'b0, 1'b0, 1'b0};
+    assign gpio_a_alt_dir[31] = {1'b1, 1'b1, 1'b0, 1'b0};
+
     assign uart0_rx = (gpio_a_alt_in[0][2] | gpio_a_alt_in[1][1]);
+    assign uart1_rx = (gpio_a_alt_in[9][1] | gpio_a_alt_in[11][1]);
+    assign uart2_rx = (gpio_a_alt_in[24][1]); // single duplex
 
     assign timer0_in[0] = gpio_a_alt_in[0][2];
     assign timer0_in[1] = gpio_a_alt_in[1][2];
@@ -382,16 +578,34 @@ module chip_core #(
     assign timer0_in[6] = gpio_a_alt_in[6][2];
     assign timer0_in[7] = gpio_a_alt_in[7][2];
 
+    assign timer1_in[0] = gpio_a_alt_in[8][2];
+    assign timer1_in[1] = gpio_a_alt_in[9][2];
+    assign timer1_in[2] = gpio_a_alt_in[10][2];
+    assign timer1_in[3] = gpio_a_alt_in[11][2];
+    assign timer1_in[4] = gpio_a_alt_in[12][2];
+    assign timer1_in[5] = gpio_a_alt_in[13][2];
+    assign timer1_in[6] = gpio_a_alt_in[14][2];
+    assign timer1_in[7] = gpio_a_alt_in[15][2];
 
+    assign timer2_in[0] = gpio_a_alt_in[16][2];
+    assign timer2_in[1] = gpio_a_alt_in[17][2];
+    assign timer2_in[2] = gpio_a_alt_in[18][2];
+    assign timer2_in[3] = gpio_a_alt_in[19][2];
+    assign timer2_in[4] = gpio_a_alt_in[20][2];
+    assign timer2_in[5] = gpio_a_alt_in[21][2];
+    assign timer2_in[6] = gpio_a_alt_in[22][2];
+    assign timer2_in[7] = gpio_a_alt_in[23][2];
+
+    assign timer3_in[0] = gpio_a_alt_in[24][2];
+    assign timer3_in[1] = gpio_a_alt_in[25][2];
+    assign timer3_in[2] = gpio_a_alt_in[26][2];
+    assign timer3_in[3] = gpio_a_alt_in[27][2];
+    assign timer3_in[4] = gpio_a_alt_in[28][2];
+    assign timer3_in[5] = gpio_a_alt_in[29][2];
+    assign timer3_in[6] = gpio_a_alt_in[30][2];
+    assign timer3_in[7] = gpio_a_alt_in[31][2];
 
     genvar j;
-    generate
-        for (j = 8; j < 32; j = j + 1) begin : gen_gpioa_defaults
-            assign gpio_a_alt_out[j] = '0;
-            assign gpio_a_alt_dir[j] = '0;
-        end
-    endgenerate
-
 
     assign gpio_b_alt_out[0] = {1'b0, 1'b0, cfg_spi_cs, 1'b0};
     assign gpio_b_alt_dir[0] = {1'b0, 1'b0, 1'b1, 1'b0};
