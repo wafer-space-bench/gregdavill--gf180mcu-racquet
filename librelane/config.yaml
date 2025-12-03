@@ -240,38 +240,79 @@ MACROS:
         - pdk_dir::libs.ref/gf180mcu_fd_ip_sram/lib/gf180mcu_fd_ip_sram__sram512x8m8wm1__ss_125C_4v50.lib
     instances:
       # SRAM cells 
-      
       u_chip_core.gen_proc_wrapper[0].u_proc_wrapper.u_sram:
-        location: ["expr::630", "expr::500 + 2*460.85"]
+        location: ["expr::450", "expr::480 + 0*932"]
         orientation: W
-      u_chip_core.gen_proc_wrapper[1].u_proc_wrapper.u_sram:
-        location: ["expr::630", "expr::500 + 3*460.85"]
+      u_chip_core.gen_proc_wrapper[5].u_proc_wrapper.u_sram:
+        location: ["expr::450", "expr::480 + 1*932"]
         orientation: W
-      u_chip_core.gen_proc_wrapper[2].u_proc_wrapper.u_sram:
-        location: ["expr::630", "expr::500 + 4*460.85"]
+      u_chip_core.gen_proc_wrapper[10].u_proc_wrapper.u_sram:
+        location: ["expr::450", "expr::480 + 2*932"]
         orientation: W
-      u_chip_core.gen_proc_wrapper[3].u_proc_wrapper.u_sram:
-        location: ["expr::630", "expr::500 + 5*460.85"]
+      u_chip_core.gen_proc_wrapper[15].u_proc_wrapper.u_sram:
+        location: ["expr::450", "expr::480 + 3*932"]
         orientation: W
-      u_chip_core.gen_proc_wrapper[4].u_proc_wrapper.u_sram:
-        location: ["expr::630", "expr::500 + 6*460.85"]
+      u_chip_core.gen_proc_wrapper[20].u_proc_wrapper.u_sram:
+        location: ["expr::450", "expr::480 + 4*932"]
         orientation: W
 
-      u_chip_core.gen_proc_wrapper[5].u_proc_wrapper.u_sram:
-        location: [2632, "expr::500 + 7*460.85"]
-        orientation: E
-      u_chip_core.gen_proc_wrapper[6].u_proc_wrapper.u_sram:
-        location: [2632, "expr::500 + 6*460.85"]
-        orientation: E
-      u_chip_core.gen_proc_wrapper[7].u_proc_wrapper.u_sram:
-        location: [2632, "expr::500 + 5*460.85"]
+      u_chip_core.gen_proc_wrapper[3].u_proc_wrapper.u_sram:
+        location: ["expr::1000", "expr::480 + 0.5*932"]
         orientation: E
       u_chip_core.gen_proc_wrapper[8].u_proc_wrapper.u_sram:
-        location: [2632, "expr::500 + 4*460.85"]
+        location: ["expr::1000", "expr::480 + 1.5*932"]
+        orientation: E
+      u_chip_core.gen_proc_wrapper[13].u_proc_wrapper.u_sram:
+        location: ["expr::1000", "expr::480 + 2.5*932"]
+        orientation: E
+      u_chip_core.gen_proc_wrapper[18].u_proc_wrapper.u_sram:
+        location: ["expr::1000", "expr::480 + 3.5*932"]
+        orientation: E
+
+      u_chip_core.gen_proc_wrapper[1].u_proc_wrapper.u_sram:
+        location: ["expr::1550", "expr::480 + 0*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[6].u_proc_wrapper.u_sram:
+        location: ["expr::1550", "expr::480 + 1*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[11].u_proc_wrapper.u_sram:
+        location: ["expr::1550", "expr::480 + 2*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[16].u_proc_wrapper.u_sram:
+        location: ["expr::1550", "expr::480 + 3*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[21].u_proc_wrapper.u_sram:
+        location: ["expr::1550", "expr::480 + 4*932"]
+        orientation: W
+
+      u_chip_core.gen_proc_wrapper[4].u_proc_wrapper.u_sram:
+        location: ["expr::2100", "expr::480 + 0.5*932"]
         orientation: E
       u_chip_core.gen_proc_wrapper[9].u_proc_wrapper.u_sram:
-        location: [2632, "expr::500 + 3*460.85"]
+        location: ["expr::2100", "expr::480 + 1.5*932"]
         orientation: E
+      u_chip_core.gen_proc_wrapper[14].u_proc_wrapper.u_sram:
+        location: ["expr::2100", "expr::480 + 2.5*932"]
+        orientation: E
+      u_chip_core.gen_proc_wrapper[19].u_proc_wrapper.u_sram:
+        location: ["expr::2100", "expr::480 + 3.5*932"]
+        orientation: E
+        
+      u_chip_core.gen_proc_wrapper[2].u_proc_wrapper.u_sram:
+        location: ["expr::2650", "expr::480 + 0*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[7].u_proc_wrapper.u_sram:
+        location: ["expr::2650", "expr::480 + 1*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[12].u_proc_wrapper.u_sram:
+        location: ["expr::2650", "expr::480 + 2*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[17].u_proc_wrapper.u_sram:
+        location: ["expr::2650", "expr::480 + 3*932"]
+        orientation: W
+      u_chip_core.gen_proc_wrapper[22].u_proc_wrapper.u_sram:
+        location: ["expr::2650", "expr::480 + 4*932"]
+        orientation: W
 
 
 
