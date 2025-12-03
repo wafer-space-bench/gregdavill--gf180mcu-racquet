@@ -1,6 +1,6 @@
 module wb_gpio #(
     parameter GPIO_NUM = 8,
-    parameter logic [(GPIO_NUM*2)-1:0] INIT_ALT = '0
+    parameter logic [GPIO_NUM-1:0] INIT_ALT = '0
 ) (
     input logic clk_i,
     input logic rst_n,
@@ -17,9 +17,9 @@ module wb_gpio #(
     output logic        ack_o,
 
     // ALT connections
-    output logic [3:0] alt_in_o [GPIO_NUM],
-    input  logic [3:0] alt_out_i[GPIO_NUM],
-    input  logic [3:0] alt_dir_i[GPIO_NUM],
+    output logic [1:0] alt_in_o [GPIO_NUM],
+    input  logic [1:0] alt_out_i[GPIO_NUM],
+    input  logic [1:0] alt_dir_i[GPIO_NUM],
 
     // GPIO control
     output logic [GPIO_NUM-1:0] io_out_o,
@@ -30,7 +30,7 @@ module wb_gpio #(
     output logic [GPIO_NUM-1:0] io_slew_o,
     output logic [GPIO_NUM-1:0] io_schmit_o,
 
-    output logic [1:0] io_alt_o[GPIO_NUM]
+    output logic io_alt_o[GPIO_NUM]
 );
 
     // Register address map, word addresses
@@ -72,7 +72,7 @@ module wb_gpio #(
     logic [GPIO_NUM-1:0] in_sync;
     logic [GPIO_NUM-1:0] reg_in;  // 2nd register for inputs
 
-    logic [1:0] reg_alt[GPIO_NUM];
+    logic reg_alt[GPIO_NUM];
 
     // io register assignments
     // assign io_out_o = reg_out; // handled by ALT IO logic below
@@ -90,24 +90,20 @@ module wb_gpio #(
     generate
         for (g = 0; g < GPIO_NUM; g = g + 1) begin : gen_alt_io
             logic _out, _dir, _reg_out, _reg_in, _reg_dir;
-            logic _alt1_out, _alt1_dir, _alt2_out, _alt2_dir, _alt3_out, _alt3_dir, _alt1_in, _alt2_in, _alt3_in;
+            logic _alt1_out, _alt1_dir, _alt1_in;
             assign _reg_in = reg_in[g];
             assign {_reg_out, _reg_dir} = {reg_out[g], reg_dir[g]};
             assign {_alt1_out, _alt1_dir} = {alt_out_i[g][1], alt_dir_i[g][1]};
-            assign {_alt2_out, _alt2_dir} = {alt_out_i[g][2], alt_dir_i[g][2]};
-            assign {_alt3_out, _alt3_dir} = {alt_out_i[g][3], alt_dir_i[g][3]};
 
             always_comb begin
                 // default state
-                {_alt3_in, _alt2_in, _alt1_in} = 3'b000;
+                {_alt1_in} = 1'b0;
 
                 // alt == 0, register controlled
                 case (reg_alt[g])
                     0: {_out, _dir} = {_reg_out, _reg_dir};
                     // alt > 0, peripheral controlled out/dir
                     1: {_out, _dir, _alt1_in} = {_alt1_out, _alt1_dir, _reg_in};
-                    2: {_out, _dir, _alt2_in} = {_alt2_out, _alt2_dir, _reg_in};
-                    3: {_out, _dir, _alt3_in} = {_alt3_out, _alt3_dir, _reg_in};
                     default: begin
                     end
                 endcase
@@ -115,7 +111,7 @@ module wb_gpio #(
 
             assign io_out_o[g] = _out;
             assign io_dir_o[g] = _dir;
-            assign alt_in_o[g] = {_alt3_in, _alt2_in, _alt1_in, 1'b0};
+            assign alt_in_o[g] = {_alt1_in, 1'b0};
         end
     endgenerate
 
@@ -164,7 +160,7 @@ module wb_gpio #(
             SLEW:   dat_o = reg_slew;
             SCHMIT: dat_o = reg_schmit;
 
-            10'b001xxxxxxx: dat_o = {30'd0, reg_alt[alt_idx]};
+            10'b001xxxxxxx: dat_o = {31'd0, reg_alt[alt_idx]};
             default: dat_o = 32'd0;
         endcase
     end
@@ -298,15 +294,14 @@ module wb_gpio #(
     genvar j;
     generate
         for (j = 0; j < GPIO_NUM; j = j + 1) begin : gen_alt_reg
-            logic [1:0] reg_;
-            assign reg_ = reg_alt[j];
+            wire reg_ = reg_alt[j];
             always_ff @(posedge clk_i or negedge rst_n) begin
                 if (!rst_n) begin
-                    reg_alt[j] <= INIT_ALT[j*2+:2];
+                    reg_alt[j] <= INIT_ALT[j+:1];
                 end else begin
                     if (wb_active && we_i && sel_i[0]) begin
                         if (adr_i[11:2] == 10'(ALT0 + j)) begin
-                            reg_alt[j][1:0] <= dat_i[1:0];
+                            reg_alt[j] <= dat_i[0];
                         end
                     end
                 end
