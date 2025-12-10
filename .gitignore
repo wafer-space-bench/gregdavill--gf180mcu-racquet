@@ -8,3 +8,4 @@ img/
 
 .vscode/
 .DS_Store
+*.lyrdb
